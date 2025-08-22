@@ -56,20 +56,43 @@ const setupKeepAlive = (serverInfo: ServerInfo, serverConfig: ServerConfig): voi
 export const initUpstreamServers = async (): Promise<void> => {
   await registerAllTools(true);
 };
+const waitForUpstreamServers = async (maxWaitTime: number = 10000): Promise<boolean> => {  
+  const startTime = Date.now();  
+    
+  while (Date.now() - startTime < maxWaitTime) {  
+    const enabledServers = serverInfos.filter(server => server.enabled !== false);  
+    const connectedServers = enabledServers.filter(server => server.status === 'connected');  
+      
+    // If we have at least one connected server, we can proceed  
+    if (connectedServers.length > 0) {  
+      return true;  
+    }  
+      
+    // Wait 100ms before checking again  
+    await new Promise(resolve => setTimeout(resolve, 100));  
+  }  
+    
+  console.warn('Timeout waiting for upstream servers to initialize');  
+  return false;  
+};
 
-export const getMcpServer = (sessionId?: string, group?: string): Server => {
-  if (!sessionId) {
-    return createMcpServer(config.mcpHubName, config.mcpHubVersion, group);
-  }
-
-  if (!servers[sessionId]) {
-    const serverGroup = group || getGroup(sessionId);
-    const server = createMcpServer(config.mcpHubName, config.mcpHubVersion, serverGroup);
-    servers[sessionId] = server;
-  } else {
-    console.log(`MCP server already exists for sessionId: ${sessionId}`);
-  }
-  return servers[sessionId];
+export const getMcpServer = async (sessionId?: string, group?: string): Promise<Server> => {  
+  if (!sessionId) {  
+    // Wait for upstream servers to be ready before creating new server  
+    await waitForUpstreamServers();  
+    return createMcpServer(config.mcpHubName, config.mcpHubVersion, group);  
+  }  
+  
+  if (!servers[sessionId]) {  
+    const serverGroup = group || getGroup(sessionId);  
+    // Wait for upstream servers to be ready before creating new server  
+    await waitForUpstreamServers();  
+    const server = createMcpServer(config.mcpHubName, config.mcpHubVersion, serverGroup);  
+    servers[sessionId] = server;  
+  } else {  
+    console.log(`MCP server already exists for sessionId: ${sessionId}`);  
+  }  
+  return servers[sessionId];  
 };
 
 export const deleteMcpServer = (sessionId: string): void => {
