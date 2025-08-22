@@ -92,7 +92,7 @@ export const handleSseConnection = async (req: Request, res: Response): Promise<
   console.log(  
     `New SSE connection established: ${transport.sessionId} with group: ${group || 'global'}${username ? ` for user: ${username}` : ''}`,  
   );  
-  await getMcpServer(transport.sessionId, group).connect(transport);  
+  await (await getMcpServer(transport.sessionId, group)).connect(transport);  
 };  
   
 export const handleSseMessage = async (req: Request, res: Response): Promise<void> => {  
@@ -191,7 +191,7 @@ export const handleMcpPostRequest = async (req: Request, res: Response): Promise
     };  
   
     console.log(`MCP connection established: ${transport.sessionId}${username ? ` for user: ${username}` : ''}`);  
-    await getMcpServer(transport.sessionId, group).connect(transport);  
+    await (await getMcpServer(transport.sessionId, group)).connect(transport);  
   }  
   
   console.log(`Handling request using transport with type ${transport.constructor.name}`);  
@@ -238,7 +238,7 @@ export const handleMcpOtherRequest = async (req: Request, res: Response) => {
     };  
   
     console.log(`Created stateless MCP transport: ${transport.sessionId}${username ? ` for user: ${username}` : ''}`);  
-    await getMcpServer(transport.sessionId, group).connect(transport);  
+    await (await getMcpServer(transport.sessionId, group)).connect(transport);  
   }  
   
   await transport.handleRequest(req, res);  
