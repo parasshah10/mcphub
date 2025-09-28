@@ -48,7 +48,11 @@ export const initMiddlewares = (app: express.Application): void => {
   // Protect API routes with authentication middleware, but exclude auth endpoints
   app.use(`${config.basePath}/api`, (req, res, next) => {
     // Skip authentication for login endpoint
-    if (req.path === '/auth/login') {
+    if (
+      req.path === '/auth/login' ||
+      req.path.startsWith('/openapi') || // Catches /openapi.json, /openapi/servers, etc.
+      req.path.startsWith('/tools/') // Catches tool execution endpoints
+    ) {
       next();
     } else {
       // Apply authentication middleware first
