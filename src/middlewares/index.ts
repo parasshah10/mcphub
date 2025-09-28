@@ -10,7 +10,7 @@ export const errorHandler = (
   res: Response,
   _next: NextFunction,
 ): void => {
-  console.error('Unhandled error:', err);
+  console.error('[DEBUG] Unhandled error caught by errorHandler:', err);
   res.status(500).json({
     success: false,
     message: 'Internal server error',
@@ -37,8 +37,10 @@ export const initMiddlewares = (app: express.Application): void => {
 
     // Only apply JSON parsing for non-streaming routes
     if (!isStreamingEndpoint) {
+      console.log(`[DEBUG] Applying express.json() parser for path: ${path}`);
       express.json()(req, res, next);
     } else {
+      console.log(`[DEBUG] Skipping express.json() parser for streaming path: ${path}`);
       next();
     }
   });
@@ -51,8 +53,10 @@ export const initMiddlewares = (app: express.Application): void => {
       req.path.startsWith('/openapi') || // Catches /openapi.json, /openapi/servers, etc.
       req.path.startsWith('/tools/') // Catches tool execution endpoints
     ) {
+      console.log(`[DEBUG] Skipping auth for public API path: ${req.path}`);
       next();
     } else {
+      console.log(`[DEBUG] Applying auth for protected API path: ${req.path}`);
       // Apply authentication middleware first
       auth(req, res, (err) => {
         if (err) {
