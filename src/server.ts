@@ -27,7 +27,25 @@ export class AppServer {
 
   constructor() {
     this.app = express();
-    this.app.use(cors());
+    // Configure CORS to expose and allow the MCP session header so browser-based
+    // clients can read the session ID and send it back on subsequent requests.
+    this.app.use(
+      cors({
+        origin: true, // Reflect request origin
+        credentials: true,
+        exposedHeaders: ['mcp-session-id', 'MCP-SESSION-ID', 'MCP-Session-Id'],
+        allowedHeaders: [
+          'Content-Type',
+          'Authorization',
+          'x-auth-token',
+          'mcp-session-id',
+          'MCP-SESSION-ID',
+          'MCP-Session-Id',
+          'x-language',
+          'x-session-id',
+        ],
+      }),
+    );
     this.port = config.port;
     this.basePath = config.basePath;
   }
