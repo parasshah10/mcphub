@@ -26,19 +26,17 @@ export const initMiddlewares = (app: express.Application): void => {
 
   app.use((req, res, next) => {
     const basePath = config.basePath;
-    // Only apply JSON parsing for API and auth routes, not for SSE or message endpoints
-    // TODO exclude sse responses by mcp endpoint
-    if (
-      req.path !== `${basePath}/sse` &&
-      !req.path.startsWith(`${basePath}/sse/`) &&
-      req.path !== `${basePath}/messages` &&
-      !req.path.match(
-        new RegExp(`^${basePath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/[^/]+/messages$`),
-      ) &&
-      !req.path.match(
-        new RegExp(`^${basePath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/[^/]+/sse(/.*)?$`),
-      )
-    ) {
+    const path = req.path;
+
+    // Determine if the path is an MCP streaming endpoint
+    const isStreamingEndpoint =
+      path.startsWith(`${basePath}/sse`) ||
+      path.startsWith(`${basePath}/mcp`) ||
+      path.startsWith(`${basePath}/messages`) ||
+      path.match(new RegExp(`^${basePath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/[^/]+/(sse|mcp|messages)`));
+
+    // Only apply JSON parsing for non-streaming routes
+    if (!isStreamingEndpoint) {
       express.json()(req, res, next);
     } else {
       next();
@@ -47,7 +45,7 @@ export const initMiddlewares = (app: express.Application): void => {
 
   // Protect API routes with authentication middleware, but exclude auth endpoints
   app.use(`${config.basePath}/api`, (req, res, next) => {
-    // Skip authentication for login endpoint
+    // Skip authentication for public endpoints like login and OpenAPI specs
     if (
       req.path === '/auth/login' ||
       req.path.startsWith('/openapi') || // Catches /openapi.json, /openapi/servers, etc.
