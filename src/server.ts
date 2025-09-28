@@ -46,48 +46,55 @@ export class AppServer {
       console.log('Server initialized successfully');
 
       initUpstreamServers()
-    .then(() => {
-      console.log('MCP server initialized successfully');
+        .then(() => {
+          console.log('MCP server initialized successfully');
 
-      // Original routes (global and group-based) - Middleware Removed
-      this.app.get(`${this.basePath}/sse/:group?`, (req, res) =>
-        handleSseConnection(req, res),
-      );
-      this.app.post(`${this.basePath}/messages`, handleSseMessage);
-      this.app.post(
-        `${this.basePath}/mcp/:group?`,
-        handleMcpPostRequest,
-      );
-      this.app.get(
-        `${this.basePath}/mcp/:group?`,
-        handleMcpOtherRequest,
-      );
-      this.app.delete(
-        `${this.basePath}/mcp/:group?`,
-        handleMcpOtherRequest,
-      );
+          // Original routes (global and group-based)
+          this.app.get(`${this.basePath}/sse/:group?`, sseUserContextMiddleware, (req, res) =>
+            handleSseConnection(req, res),
+          );
+          this.app.post(`${this.basePath}/messages`, sseUserContextMiddleware, handleSseMessage);
+          this.app.post(
+            `${this.basePath}/mcp/:group?`,
+            sseUserContextMiddleware,
+            handleMcpPostRequest,
+          );
+          this.app.get(
+            `${this.basePath}/mcp/:group?`,
+            sseUserContextMiddleware,
+            handleMcpOtherRequest,
+          );
+          this.app.delete(
+            `${this.basePath}/mcp/:group?`,
+            sseUserContextMiddleware,
+            handleMcpOtherRequest,
+          );
 
-      // User-scoped routes with user context middleware - Middleware Removed
-      this.app.get(`${this.basePath}/:user/sse/:group?`, (req, res) =>
-        handleSseConnection(req, res),
-      );
-      this.app.post(
-        `${this.basePath}/:user/messages`,
-        handleSseMessage,
-      );
-      this.app.post(
-        `${this.basePath}/:user/mcp/:group?`,
-        handleMcpPostRequest,
-      );
-      this.app.get(
-        `${this.basePath}/:user/mcp/:group?`,
-        handleMcpOtherRequest,
-      );
-      this.app.delete(
-        `${this.basePath}/:user/mcp/:group?`,
-        handleMcpOtherRequest,
-      );
-    })
+          // User-scoped routes with user context middleware
+          this.app.get(`${this.basePath}/:user/sse/:group?`, sseUserContextMiddleware, (req, res) =>
+            handleSseConnection(req, res),
+          );
+          this.app.post(
+            `${this.basePath}/:user/messages`,
+            sseUserContextMiddleware,
+            handleSseMessage,
+          );
+          this.app.post(
+            `${this.basePath}/:user/mcp/:group?`,
+            sseUserContextMiddleware,
+            handleMcpPostRequest,
+          );
+          this.app.get(
+            `${this.basePath}/:user/mcp/:group?`,
+            sseUserContextMiddleware,
+            handleMcpOtherRequest,
+          );
+          this.app.delete(
+            `${this.basePath}/:user/mcp/:group?`,
+            sseUserContextMiddleware,
+            handleMcpOtherRequest,
+          );
+        })
         .catch((error) => {
           console.error('Error initializing MCP server:', error);
           throw error;
