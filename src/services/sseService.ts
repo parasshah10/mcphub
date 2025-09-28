@@ -152,18 +152,19 @@ export const handleMcpPostRequest = async (req: Request, res: Response): Promise
 
   const sessionId = req.headers['mcp-session-id'] as string | undefined;
   const group = req.params.group;
-  const body = req.body;
+
+  // Log the incoming request without the body, as it will be streamed
   console.log(
-    `Handling MCP post request for sessionId: ${sessionId} and group: ${group}${username ? ` for user: ${username}` : ''} with body: ${JSON.stringify(body)}`,
+    `Handling MCP post request for sessionId: ${sessionId} and group: ${group}${username ? ` for user: ${username}` : ''}`,
   );
 
-  // Check bearer auth using filtered settings
+  // Check bearer auth
   if (!validateBearerAuth(req)) {
     res.status(401).send('Bearer authentication required or invalid token');
     return;
   }
 
-  // Get filtered settings based on user context (after setting user context)
+  // Check if global routes are enabled
   const settings = loadSettings();
   const routingConfig = settings.systemConfig?.routing || {
     enableGlobalRoute: true,
@@ -174,15 +175,18 @@ export const handleMcpPostRequest = async (req: Request, res: Response): Promise
     return;
   }
 
+  // Set request context for MCP handlers to access HTTP headers
   const requestContextService = RequestContextService.getInstance();
   requestContextService.setRequestContext(req);
 
   try {
+    // Case 1: Request is for an existing, known session
     if (sessionId && transports[sessionId]) {
-      console.log(`Reusing existing transport for sessionId: ${sessionId}`);
       const transport = transports[sessionId].transport as StreamableHTTPServerTransport;
-      await transport.handleRequest(req, res, req.body);
-    } else if (!sessionId && isInitializeRequest(req.body)) {
+      await transport.handleRequest(req, res);
+    } 
+    // Case 2: This is a new connection (must be an initialize request, which the SDK will verify)
+    else {
       const transport = new StreamableHTTPServerTransport({
         sessionIdGenerator: () => randomUUID(),
         onsessioninitialized: (newSessionId) => {
@@ -201,16 +205,17 @@ export const handleMcpPostRequest = async (req: Request, res: Response): Promise
         }
       };
       
-      await transport.handleRequest(req, res, req.body);
-    } else {
-      res.status(400).json({
-        jsonrpc: '2.0',
-        error: {
-          code: -32000,
-          message: 'Bad Request: No valid session ID provided',
-        },
-        id: null,
-      });
+      // Let the transport handle the raw request, it will parse the initialize message
+      await transport.handleRequest(req, res);
+    }
+  } catch (error) {
+    console.error(`Error in handleMcpPostRequest: ${error}`);
+    if (!res.headersSent) {
+        res.status(500).json({
+            jsonrpc: '2.0',
+            error: { code: -32000, message: 'Internal Server Error' },
+            id: null,
+        });
     }
   } finally {
     // Clean up request context after handling
