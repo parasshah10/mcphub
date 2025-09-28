@@ -1346,19 +1346,16 @@ export const createMcpServer = (name: string, version: string, group?: string): 
 
   const server = new Server(
     { name: serverName, version },
-    // *** FIX 1: Do NOT advertise the 'resources' capability since it is not implemented ***
+    // *** THE ONLY CHANGE IS HERE: We no longer advertise the 'resources' capability. ***
+    // This is the correct and only change needed to prevent the -32601 error without crashing.
     { capabilities: { tools: {}, prompts: {} } },
   );
 
-  // Existing handlers (correct)
+  // These are the only handlers that should be registered.
   server.setRequestHandler(ListToolsRequestSchema, handleListToolsRequest);
   server.setRequestHandler(CallToolRequestSchema, handleCallToolRequest);
   server.setRequestHandler(GetPromptRequestSchema, handleGetPromptRequest);
   server.setRequestHandler(ListPromptsRequestSchema, handleListPromptsRequest);
-
-  // *** FIX 2: Add safe stub handlers for 'resources' to prevent errors from overeager clients ***
-  server.setRequestHandler(ListResourcesRequestSchema, handleListResourcesRequest);
-  server.setRequestHandler(ReadResourceRequestSchema, handleReadResourceRequest);
   
   return server;
 };
