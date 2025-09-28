@@ -37,10 +37,8 @@ export const initMiddlewares = (app: express.Application): void => {
 
     // Only apply JSON parsing for non-streaming routes
     if (!isStreamingEndpoint) {
-      console.log(`[DEBUG] Applying express.json() parser for path: ${path}`);
       express.json()(req, res, next);
     } else {
-      console.log(`[DEBUG] Skipping express.json() parser for streaming path: ${path}`);
       next();
     }
   });
