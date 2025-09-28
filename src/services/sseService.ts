@@ -145,21 +145,14 @@ export const handleSseMessage = async (req: Request, res: Response): Promise<voi
 };
 
 export const handleMcpPostRequest = async (req: Request, res: Response): Promise<void> => {
-  // User context is now set by sseUserContextMiddleware
-  const userContextService = UserContextService.getInstance();
-  const currentUser = userContextService.getCurrentUser();
-  const username = currentUser?.username;
-
   const sessionId = req.headers['mcp-session-id'] as string | undefined;
   const group = req.params.group;
 
-  // Log the incoming request without the body, as it will be streamed
-  console.log(
-    `Handling MCP post request for sessionId: ${sessionId} and group: ${group}${username ? ` for user: ${username}` : ''}`,
-  );
-
+  console.log(`[DEBUG] ==> Entering handleMcpPostRequest. SessionID Header: ${sessionId}, Group: ${group}`);
+  
   // Check bearer auth
   if (!validateBearerAuth(req)) {
+    console.log('[DEBUG] Bearer auth failed.');
     res.status(401).send('Bearer authentication required or invalid token');
     return;
   }
@@ -171,45 +164,52 @@ export const handleMcpPostRequest = async (req: Request, res: Response): Promise
     enableGroupNameRoute: true,
   };
   if (!group && !routingConfig.enableGlobalRoute) {
+    console.log('[DEBUG] Global route access denied.');
     res.status(403).send('Global routes are disabled. Please specify a group ID.');
     return;
   }
 
-  // Set request context for MCP handlers to access HTTP headers
   const requestContextService = RequestContextService.getInstance();
   requestContextService.setRequestContext(req);
 
   try {
     // Case 1: Request is for an existing, known session
     if (sessionId && transports[sessionId]) {
+      console.log(`[DEBUG] Found existing transport for SessionID: ${sessionId}. Reusing it.`);
       const transport = transports[sessionId].transport as StreamableHTTPServerTransport;
       await transport.handleRequest(req, res);
+      console.log(`[DEBUG] Finished handling request for existing SessionID: ${sessionId}`);
     } 
-    // Case 2: This is a new connection (must be an initialize request, which the SDK will verify)
+    // Case 2: This is a new connection. The SDK's handleRequest will check if it's a valid initialize request.
     else {
+      console.log(`[DEBUG] No existing transport found for SessionID: ${sessionId}. Creating new transport.`);
       const transport = new StreamableHTTPServerTransport({
         sessionIdGenerator: () => randomUUID(),
         onsessioninitialized: (newSessionId) => {
-          console.log(`MCP session initialized: ${newSessionId} for group: ${group}`);
+          console.log(`[DEBUG] ONSESSIONINITIALIZED CALLBACK: New session created with ID: ${newSessionId}`);
           transports[newSessionId] = { transport, group: group };
+          console.log(`[DEBUG] Stored new transport in dictionary for SessionID: ${newSessionId}`);
           const mcpServer = getMcpServer(newSessionId, group);
           mcpServer.connect(transport);
+          console.log(`[DEBUG] Associated MCP Server with SessionID: ${newSessionId}`);
         },
       });
 
       transport.onclose = () => {
         if (transport.sessionId) {
-          console.log(`Transport closed: ${transport.sessionId}`);
+          console.log(`[DEBUG] ONCLOSE CALLBACK: Transport closed for SessionID: ${transport.sessionId}`);
           delete transports[transport.sessionId];
           deleteMcpServer(transport.sessionId);
         }
       };
       
-      // Let the transport handle the raw request, it will parse the initialize message
+      // Let the transport handle the raw request. It will parse the body internally.
+      console.log('[DEBUG] Passing request to new transport.handleRequest...');
       await transport.handleRequest(req, res);
+      console.log(`[DEBUG] Finished handling request for new transport. Final SessionID: ${transport.sessionId}`);
     }
   } catch (error) {
-    console.error(`Error in handleMcpPostRequest: ${error}`);
+    console.error(`[DEBUG] Error in handleMcpPostRequest: ${error}`);
     if (!res.headersSent) {
         res.status(500).json({
             jsonrpc: '2.0',
@@ -220,6 +220,7 @@ export const handleMcpPostRequest = async (req: Request, res: Response): Promise
   } finally {
     // Clean up request context after handling
     requestContextService.clearRequestContext();
+    console.log(`[DEBUG] <== Exiting handleMcpPostRequest for SessionID: ${sessionId}`);
   }
 };
 
