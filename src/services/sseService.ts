@@ -216,6 +216,7 @@ export const handleMcpPostRequest = async (req: Request, res: Response): Promise
     // Clean up request context after handling
     requestContextService.clearRequestContext();
   }
+};
 
 export const handleMcpOtherRequest = async (req: Request, res: Response) => {
   // User context is now set by sseUserContextMiddleware
