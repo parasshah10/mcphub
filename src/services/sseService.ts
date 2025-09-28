@@ -174,56 +174,48 @@ export const handleMcpPostRequest = async (req: Request, res: Response): Promise
     return;
   }
 
-  let transport: StreamableHTTPServerTransport;
-  if (sessionId && transports[sessionId]) {
-    console.log(`Reusing existing transport for sessionId: ${sessionId}`);
-    transport = transports[sessionId].transport as StreamableHTTPServerTransport;
-  } else if (!sessionId && isInitializeRequest(req.body)) {
-    transport = new StreamableHTTPServerTransport({
-      sessionIdGenerator: () => randomUUID(),
-      onsessioninitialized: (sessionId) => {
-        transports[sessionId] = { transport, group };
-      },
-    });
-
-    transport.onclose = () => {
-      console.log(`Transport closed: ${transport.sessionId}`);
-      if (transport.sessionId) {
-        delete transports[transport.sessionId];
-        deleteMcpServer(transport.sessionId);
-        console.log(`MCP connection closed: ${transport.sessionId}`);
-      }
-    };
-
-    console.log(
-      `MCP connection established: ${transport.sessionId}${username ? ` for user: ${username}` : ''}`,
-    );
-    await getMcpServer(transport.sessionId, group).connect(transport);
-  } else {
-    res.status(400).json({
-      jsonrpc: '2.0',
-      error: {
-        code: -32000,
-        message: 'Bad Request: No valid session ID provided',
-      },
-      id: null,
-    });
-    return;
-  }
-
-  console.log(`Handling request using transport with type ${transport.constructor.name}`);
-
-  // Set request context for MCP handlers to access HTTP headers
   const requestContextService = RequestContextService.getInstance();
   requestContextService.setRequestContext(req);
 
   try {
-    await transport.handleRequest(req, res, req.body);
+    if (sessionId && transports[sessionId]) {
+      console.log(`Reusing existing transport for sessionId: ${sessionId}`);
+      const transport = transports[sessionId].transport as StreamableHTTPServerTransport;
+      await transport.handleRequest(req, res, req.body);
+    } else if (!sessionId && isInitializeRequest(req.body)) {
+      const transport = new StreamableHTTPServerTransport({
+        sessionIdGenerator: () => randomUUID(),
+        onsessioninitialized: (newSessionId) => {
+          console.log(`MCP session initialized: ${newSessionId} for group: ${group}`);
+          transports[newSessionId] = { transport, group: group };
+          const mcpServer = getMcpServer(newSessionId, group);
+          mcpServer.connect(transport);
+        },
+      });
+
+      transport.onclose = () => {
+        if (transport.sessionId) {
+          console.log(`Transport closed: ${transport.sessionId}`);
+          delete transports[transport.sessionId];
+          deleteMcpServer(transport.sessionId);
+        }
+      };
+      
+      await transport.handleRequest(req, res, req.body);
+    } else {
+      res.status(400).json({
+        jsonrpc: '2.0',
+        error: {
+          code: -32000,
+          message: 'Bad Request: No valid session ID provided',
+        },
+        id: null,
+      });
+    }
   } finally {
     // Clean up request context after handling
     requestContextService.clearRequestContext();
   }
-};
 
 export const handleMcpOtherRequest = async (req: Request, res: Response) => {
   // User context is now set by sseUserContextMiddleware
