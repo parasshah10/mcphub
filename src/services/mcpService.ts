@@ -6,6 +6,8 @@ import {
   ListPromptsRequestSchema,
   GetPromptRequestSchema,
   ServerCapabilities,
+  ListResourcesRequestSchema,
+  ReadResourceRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
@@ -754,6 +756,15 @@ export const toggleServerStatus = async (
   }
 };
 
+export const handleListResourcesRequest = async (_: any, __: any) => {
+  return { resources: [] };
+};
+
+// Optional stub: if a client tries to read anyway, return no content
+export const handleReadResourceRequest = async (_: any, __: any) => {
+  return { contents: [] };
+};
+
 export const handleListToolsRequest = async (_: any, extra: any) => {
   const sessionId = extra.sessionId || '';
   const group = getGroup(sessionId);
@@ -1335,11 +1346,19 @@ export const createMcpServer = (name: string, version: string, group?: string): 
 
   const server = new Server(
     { name: serverName, version },
-    { capabilities: { tools: {}, prompts: {}, resources: {} } },
+    // *** FIX 1: Do NOT advertise the 'resources' capability since it is not implemented ***
+    { capabilities: { tools: {}, prompts: {} } },
   );
+
+  // Existing handlers (correct)
   server.setRequestHandler(ListToolsRequestSchema, handleListToolsRequest);
   server.setRequestHandler(CallToolRequestSchema, handleCallToolRequest);
   server.setRequestHandler(GetPromptRequestSchema, handleGetPromptRequest);
   server.setRequestHandler(ListPromptsRequestSchema, handleListPromptsRequest);
+
+  // *** FIX 2: Add safe stub handlers for 'resources' to prevent errors from overeager clients ***
+  server.setRequestHandler(ListResourcesRequestSchema, handleListResourcesRequest);
+  server.setRequestHandler(ReadResourceRequestSchema, handleReadResourceRequest);
+  
   return server;
 };
