@@ -39,17 +39,24 @@ const ToolResult: React.FC<ToolResultProps> = ({ result, onClose }) => {
       }
       
       textToCopy = result.content.map(item => {
-        // If it's a simple text object, just get the text
         if (item.type === 'text' && typeof item.text !== 'undefined') {
-          return item.text;
+          // *** THE FIX IS HERE: Check if the text is a JSON string and pretty-print it ***
+          try {
+            // Attempt to parse the text as JSON
+            const parsedJson = JSON.parse(item.text);
+            // If successful, stringify it with nice formatting
+            return JSON.stringify(parsedJson, null, 2);
+          } catch (e) {
+            // If it's not valid JSON, just return the plain text
+            return item.text;
+          }
         }
-        // If it's an image, provide a placeholder
         if (item.type === 'image') {
           return `[${t('tool.imageData')}]`;
         }
-        // For any other complex type, stringify it
+        // For any other complex type, stringify it with formatting
         return JSON.stringify(item, null, 2);
-      }).join('\n'); // Join multiple content parts with a newline
+      }).join('\n');
     }
 
     navigator.clipboard.writeText(textToCopy).then(() => {
