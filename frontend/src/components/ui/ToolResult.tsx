@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CheckCircle, XCircle, AlertCircle } from '@/components/icons/LucideIcons';
+import { CheckCircle, XCircle, AlertCircle, Copy, Check } from '@/components/icons/LucideIcons';
+import { useToast } from '@/contexts/ToastContext';
 
 interface ToolResultProps {
   result: {
@@ -18,8 +19,26 @@ interface ToolResultProps {
 
 const ToolResult: React.FC<ToolResultProps> = ({ result, onClose }) => {
   const { t } = useTranslation();
+  const { showToast } = useToast();
+  const [copied, setCopied] = useState(false);
+  
   // Extract content from data.content
   const content = result.content;
+
+  const handleCopy = () => {
+    const textToCopy = result.success 
+      ? JSON.stringify(result.content, null, 2) 
+      : result.error || result.message || t('tool.unknownError');
+
+    navigator.clipboard.writeText(textToCopy).then(() => {
+      setCopied(true);
+      showToast(t('common.copySuccess'), 'success');
+      setTimeout(() => setCopied(false), 2000);
+    }).catch(err => {
+      showToast(t('common.copyFailed'), 'error');
+      console.error('Failed to copy text: ', err);
+    });
+  };
 
   const renderContent = (content: any): React.ReactNode => {
     if (Array.isArray(content)) {
@@ -37,7 +56,7 @@ const ToolResult: React.FC<ToolResultProps> = ({ result, onClose }) => {
     if (typeof item === 'string') {
       return (
         <div className="bg-gray-50 rounded-md p-3">
-          <pre className="whitespace-pre-wrap text-sm text-gray-800 font-mono">{item}</pre>
+          <pre className="whitespace-pre-wrap text-sm text-gray-800 font-mono max-h-96 overflow-y-auto">{item}</pre>
         </div>
       );
     }
@@ -46,14 +65,14 @@ const ToolResult: React.FC<ToolResultProps> = ({ result, onClose }) => {
       if (item.type === 'text' && item.text) {
         return (
           <div className="bg-gray-50 rounded-md p-3">
-            <pre className="whitespace-pre-wrap text-sm text-gray-800 font-mono">{item.text}</pre>
+            <pre className="whitespace-pre-wrap text-sm text-gray-800 font-mono max-h-96 overflow-y-auto">{item.text}</pre>
           </div>
         );
       }
 
       if (item.type === 'image' && item.data) {
         return (
-          <div className="bg-gray-50 rounded-md p-3">
+          <div className="bg-gray-50 rounded-md p-3 max-h-96 overflow-y-auto">
             <img
               src={`data:${item.mimeType || 'image/png'};base64,${item.data}`}
               alt={t('tool.toolResult')}
@@ -70,14 +89,14 @@ const ToolResult: React.FC<ToolResultProps> = ({ result, onClose }) => {
         return (
           <div className="bg-gray-50 rounded-md p-3">
             <div className="text-xs text-gray-500 mb-2">{t('tool.jsonResponse')}</div>
-            <pre className="text-sm text-gray-800 overflow-auto">{JSON.stringify(parsed, null, 2)}</pre>
+            <pre className="text-sm text-gray-800 overflow-auto max-h-96 overflow-y-auto">{JSON.stringify(parsed, null, 2)}</pre>
           </div>
         );
       } catch {
         // If not valid JSON, show as string
         return (
           <div className="bg-gray-50 rounded-md p-3">
-            <pre className="whitespace-pre-wrap text-sm text-gray-800 font-mono">{String(item)}</pre>
+            <pre className="whitespace-pre-wrap text-sm text-gray-800 font-mono max-h-96 overflow-y-auto">{String(item)}</pre>
           </div>
         );
       }
@@ -85,7 +104,7 @@ const ToolResult: React.FC<ToolResultProps> = ({ result, onClose }) => {
 
     return (
       <div className="bg-gray-50 rounded-md p-3">
-        <pre className="whitespace-pre-wrap text-sm text-gray-800 font-mono">{String(item)}</pre>
+        <pre className="whitespace-pre-wrap text-sm text-gray-800 font-mono max-h-96 overflow-y-auto">{String(item)}</pre>
       </div>
     );
   };
@@ -104,15 +123,23 @@ const ToolResult: React.FC<ToolResultProps> = ({ result, onClose }) => {
               <h4 className="text-sm font-medium text-gray-900">
                 {t('tool.execution')} {result.success ? t('tool.successful') : t('tool.failed')}
               </h4>
-
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 text-sm"
-          >
-            ✕
-          </button>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={handleCopy}
+              className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+              title={t('common.copy')}
+            >
+              {copied ? <Check size={16} className="text-green-500" /> : <Copy size={16} />}
+            </button>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 text-sm"
+            >
+              ✕
+            </button>
+          </div>
         </div>
       </div>
 
@@ -143,7 +170,7 @@ const ToolResult: React.FC<ToolResultProps> = ({ result, onClose }) => {
               </div>
             ) : (
               <div className="bg-red-50 border border-red-300 rounded-md p-3">
-                <pre className="text-sm text-red-800 whitespace-pre-wrap">
+                <pre className="text-sm text-red-800 whitespace-pre-wrap max-h-96 overflow-y-auto">
                   {result.error || result.message || t('tool.unknownError')}
                 </pre>
               </div>
