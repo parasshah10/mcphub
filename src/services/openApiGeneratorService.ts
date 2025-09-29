@@ -90,10 +90,16 @@ function convertToolSchemaToOpenAPI(tool: Tool): {
  */
 function generateOperationFromTool(tool: Tool, serverName: string): OpenAPIV3.OperationObject {
   const { parameters, requestBody } = convertToolSchemaToOpenAPI(tool);
+  
+  // Smartly generate operationId to avoid duplication like "Server_Server-tool"
+  const operationId = tool.name.startsWith(`${serverName}-`)
+    ? tool.name.replace('-', '_') // Replace only the first hyphen for a clean ID like "Arctic_calculator::add"
+    : `${serverName}_${tool.name}`; // Fallback for safety if tool name isn't prefixed
+  
   const operation: OpenAPIV3.OperationObject = {
     summary: tool.description || `Execute ${tool.name} tool`,
     description: tool.description || `Execute the ${tool.name} tool from ${serverName} server`,
-    operationId: `${serverName}_${tool.name}`,
+    operationId: operationId,
     tags: [serverName],
     ...(parameters && parameters.length > 0 && { parameters }),
     ...(requestBody && { requestBody }),
