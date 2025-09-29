@@ -26,9 +26,31 @@ const ToolResult: React.FC<ToolResultProps> = ({ result, onClose }) => {
   const content = result.content;
 
   const handleCopy = () => {
-    const textToCopy = result.success 
-      ? JSON.stringify(result.content, null, 2) 
-      : result.error || result.message || t('tool.unknownError');
+    let textToCopy: string;
+
+    if (!result.success) {
+      // If there was an error, copy the error message
+      textToCopy = result.error || result.message || t('tool.unknownError');
+    } else {
+      // If successful, intelligently extract the content
+      if (!result.content || result.content.length === 0) {
+        showToast(t('tool.nothingToCopy'), 'info');
+        return;
+      }
+      
+      textToCopy = result.content.map(item => {
+        // If it's a simple text object, just get the text
+        if (item.type === 'text' && typeof item.text !== 'undefined') {
+          return item.text;
+        }
+        // If it's an image, provide a placeholder
+        if (item.type === 'image') {
+          return `[${t('tool.imageData')}]`;
+        }
+        // For any other complex type, stringify it
+        return JSON.stringify(item, null, 2);
+      }).join('\n'); // Join multiple content parts with a newline
+    }
 
     navigator.clipboard.writeText(textToCopy).then(() => {
       setCopied(true);
