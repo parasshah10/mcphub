@@ -1,8 +1,7 @@
 #!/usr/bin/env node
 
 import path from 'path';
-import { fileURLToPath } from 'url';
-import { execSync } from 'child_process';
+import { fileURLToPath, pathToFileURL } from 'url';
 import fs from 'fs';
 
 // Enable debug logging if needed
@@ -90,7 +89,10 @@ checkFrontend(projectRoot);
 
 // Start the server
 console.log('🚀 Starting MCPHub server...');
-import(path.join(projectRoot, 'dist', 'index.js')).catch(err => {
+const entryPath = path.join(projectRoot, 'dist', 'index.js');
+// Convert to file:// URL for cross-platform ESM compatibility (required on Windows)
+const entryUrl = pathToFileURL(entryPath).href;
+import(entryUrl).catch(err => {
   console.error('Failed to start MCPHub:', err);
   process.exit(1);
 });
