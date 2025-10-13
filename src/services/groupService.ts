@@ -27,15 +27,19 @@ export const getAllGroups = (): IGroup[] => {
 
 // Get group by ID or name
 export const getGroupByIdOrName = (key: string): IGroup | undefined => {
+  if (!key) return undefined;
   const settings = loadSettings();
   const routingConfig = settings.systemConfig?.routing || {
     enableGlobalRoute: true,
     enableGroupNameRoute: true,
   };
   const groups = getAllGroups();
+  const lowerCaseKey = key.toLowerCase();
   return (
     groups.find(
-      (group) => group.id === key || (group.name === key && routingConfig.enableGroupNameRoute),
+      (group) =>
+        group.id === key ||
+        (routingConfig.enableGroupNameRoute && group.name.toLowerCase() === lowerCaseKey),
     ) || undefined
   );
 };

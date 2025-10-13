@@ -12,11 +12,12 @@ interface ServerCardProps {
   server: Server
   onRemove: (serverName: string) => void
   onEdit: (server: Server) => void
+  onClone: (server: Server) => void
   onToggle?: (server: Server, enabled: boolean) => Promise<boolean>
   onRefresh?: () => void
 }
 
-const ServerCard = ({ server, onRemove, onEdit, onToggle, onRefresh }: ServerCardProps) => {
+const ServerCard = ({ server, onRemove, onEdit, onClone, onToggle, onRefresh }: ServerCardProps) => {
   const { t } = useTranslation()
   const { showToast } = useToast()
   const [isExpanded, setIsExpanded] = useState(false)
@@ -47,6 +48,11 @@ const ServerCard = ({ server, onRemove, onEdit, onToggle, onRefresh }: ServerCar
   const handleEdit = (e: React.MouseEvent) => {
     e.stopPropagation()
     onEdit(server)
+  }
+
+  const handleClone = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    onClone(server)
   }
 
   const handleToggle = async (e: React.MouseEvent) => {
@@ -230,6 +236,13 @@ const ServerCard = ({ server, onRemove, onEdit, onToggle, onRefresh }: ServerCar
             )}
           </div>
           <div className="flex space-x-2">
+            <button
+              onClick={handleClone}
+              className="p-2 bg-gray-100 text-gray-600 rounded hover:bg-gray-200 btn-secondary"
+              title={t('server.clone') || 'Clone'}
+            >
+              <Copy size={14} />
+            </button>
             <button
               onClick={handleEdit}
               className="px-3 py-1 bg-blue-100 text-blue-800 rounded hover:bg-blue-200 text-sm btn-primary"

@@ -1,27 +1,27 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import ServerForm from './ServerForm'
 import { apiPost } from '../utils/fetchInterceptor'
 import { detectVariables } from '../utils/variableDetection'
+import { ServerConfig } from '@/types'
 
 interface AddServerFormProps {
   onAdd: () => void
+  onCancel: () => void
+  initialData?: Partial<ServerConfig> | null
 }
 
-const AddServerForm = ({ onAdd }: AddServerFormProps) => {
+const AddServerForm = ({ onAdd, onCancel, initialData }: AddServerFormProps) => {
   const { t } = useTranslation()
-  const [modalVisible, setModalVisible] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [confirmationVisible, setConfirmationVisible] = useState(false)
   const [pendingPayload, setPendingPayload] = useState<any>(null)
   const [detectedVariables, setDetectedVariables] = useState<string[]>([])
+  const [serverData, setServerData] = useState<Partial<ServerConfig> | null>(initialData)
 
-  const toggleModal = () => {
-    setModalVisible(!modalVisible)
-    setError(null) // Clear any previous errors when toggling modal
-    setConfirmationVisible(false) // Close confirmation dialog
-    setPendingPayload(null) // Clear pending payload
-  }
+  useEffect(() => {
+    setServerData(initialData)
+  }, [initialData])
 
   const handleConfirmSubmit = async () => {
     if (pendingPayload) {
@@ -37,7 +37,6 @@ const AddServerForm = ({ onAdd }: AddServerFormProps) => {
       const result = await apiPost('/servers', payload)
 
       if (!result.success) {
-        // Use specific error message from the response if available
         if (result && result.message) {
           setError(result.message)
         } else {
@@ -46,12 +45,10 @@ const AddServerForm = ({ onAdd }: AddServerFormProps) => {
         return
       }
 
-      setModalVisible(false)
       onAdd()
     } catch (err) {
       console.error('Error adding server:', err)
 
-      // Use friendly error messages based on error type
       if (!navigator.onLine) {
         setError(t('errors.network'))
       } else if (err instanceof TypeError && (
@@ -67,16 +64,13 @@ const AddServerForm = ({ onAdd }: AddServerFormProps) => {
 
   const handleSubmit = async (payload: any) => {
     try {
-      // Check for variables in the payload
       const variables = detectVariables(payload)
 
       if (variables.length > 0) {
-        // Show confirmation dialog
         setDetectedVariables(variables)
         setPendingPayload(payload)
         setConfirmationVisible(true)
       } else {
-        // Submit directly if no variables found
         await submitServer(payload)
       }
     } catch (err) {
@@ -86,27 +80,16 @@ const AddServerForm = ({ onAdd }: AddServerFormProps) => {
   }
 
   return (
-    <div>
-      <button
-        onClick={toggleModal}
-        className="w-full bg-blue-100 text-blue-800 rounded hover:bg-blue-200 py-2 px-4 flex items-center justify-center btn-primary"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" viewBox="0 0 20 20" fill="currentColor">
-          <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
-        </svg>
-        {t('server.add')}
-      </button>
-
-      {modalVisible && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <ServerForm
-            onSubmit={handleSubmit}
-            onCancel={toggleModal}
-            modalTitle={t('server.addServer')}
-            formError={error}
-          />
-        </div>
-      )}
+    <>
+      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <ServerForm
+          onSubmit={handleSubmit}
+          onCancel={onCancel}
+          modalTitle={t('server.addServer')}
+          formError={error}
+          initialData={serverData}
+        />
+      </div>
 
       {confirmationVisible && (
         <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4">
@@ -161,7 +144,7 @@ const AddServerForm = ({ onAdd }: AddServerFormProps) => {
           </div>
         </div>
       )}
-    </div>
+    </>
   )
 }
 

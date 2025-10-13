@@ -225,9 +225,13 @@ export const getServerOpenAPISpec = async (req: Request, res: Response): Promise
   try {
     const { name } = req.params;
 
-    // Check if server exists
+    // Find the server case-insensitively
     const availableServers = await getAvailableServers();
-    if (!availableServers.includes(name)) {
+    const actualServerName = availableServers.find(
+      (serverName) => serverName.toLowerCase() === name.toLowerCase(),
+    );
+
+    if (!actualServerName) {
       res.status(404).json({
         error: 'Server not found',
         message: `Server '${name}' is not connected or does not exist`,
@@ -236,13 +240,14 @@ export const getServerOpenAPISpec = async (req: Request, res: Response): Promise
     }
 
     const options: OpenAPIGenerationOptions = {
-      title: (req.query.title as string) || `${name} MCP API`,
+      title: (req.query.title as string) || `${actualServerName} MCP API`,
       description:
-        (req.query.description as string) || `OpenAPI specification for ${name} MCP server tools`,
+        (req.query.description as string) ||
+        `OpenAPI specification for ${actualServerName} MCP server tools`,
       version: req.query.version as string,
       serverUrl: req.query.serverUrl as string,
       includeDisabledTools: req.query.includeDisabled === 'true',
-      serverFilter: [name], // Filter to only this server
+      serverFilter: [actualServerName], // Filter to only this server
     };
 
     const openApiSpec = await generateOpenAPISpec(options);

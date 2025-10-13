@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { Server } from '@/types';
+import { Server, ServerConfig } from '@/types';
 import ServerCard from '@/components/ServerCard';
 import AddServerForm from '@/components/AddServerForm';
 import EditServerForm from '@/components/EditServerForm';
@@ -25,12 +25,34 @@ const ServersPage: React.FC = () => {
   const [editingServer, setEditingServer] = useState<Server | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showDxtUpload, setShowDxtUpload] = useState(false);
+  const [showAddServerModal, setShowAddServerModal] = useState(false);
+  const [initialServerData, setInitialServerData] = useState<Partial<ServerConfig> | null>(null);
 
   const handleEditClick = async (server: Server) => {
     const fullServerData = await handleServerEdit(server);
     if (fullServerData) {
       setEditingServer(fullServerData);
     }
+  };
+
+  const handleCloneClick = async (server: Server) => {
+    const fullServerData = await handleServerEdit(server);
+    if (fullServerData) {
+      const clonedConfig = { ...fullServerData.config };
+      clonedConfig.name = `${fullServerData.name}-copy`;
+      setInitialServerData(clonedConfig);
+      setShowAddServerModal(true);
+    }
+  };
+
+  const handleAddClick = () => {
+    setInitialServerData(null);
+    setShowAddServerModal(true);
+  };
+
+  const handleAddComplete = () => {
+    setShowAddServerModal(false);
+    handleServerAdd();
   };
 
   const handleEditComplete = () => {
@@ -69,7 +91,15 @@ const ServersPage: React.FC = () => {
             </svg>
             {t('nav.market')}
           </button>
-          <AddServerForm onAdd={handleServerAdd} />
+          <button
+            onClick={handleAddClick}
+            className="w-full bg-blue-100 text-blue-800 rounded hover:bg-blue-200 py-2 px-4 flex items-center justify-center btn-primary"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+            </svg>
+            {t('server.add')}
+          </button>
           <button
             onClick={() => setShowDxtUpload(true)}
             className="px-4 py-2 bg-blue-100 text-blue-800 rounded hover:bg-blue-200 flex items-center btn-primary transition-all duration-200"
@@ -111,7 +141,7 @@ const ServersPage: React.FC = () => {
               aria-label={t('app.closeButton')}
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M4.293 4.293a1 1 011.414 0L10 8.586l4.293-4.293a1 1 111.414 1.414L11.414 10l4.293 4.293a1 1 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 01-1.414-1.414L8.586 10 4.293 5.707a1 1 010-1.414z" clipRule="evenodd" />
+                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
               </svg>
             </button>
           </div>
@@ -140,11 +170,20 @@ const ServersPage: React.FC = () => {
               server={server}
               onRemove={handleServerRemove}
               onEdit={handleEditClick}
+              onClone={handleCloneClick}
               onToggle={handleServerToggle}
               onRefresh={triggerRefresh}
             />
           ))}
         </div>
+      )}
+
+      {showAddServerModal && (
+        <AddServerForm
+          onAdd={handleAddComplete}
+          onCancel={() => setShowAddServerModal(false)}
+          initialData={initialServerData}
+        />
       )}
 
       {editingServer && (
