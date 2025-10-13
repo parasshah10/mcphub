@@ -13,7 +13,7 @@ import { JWT_SECRET } from '../config/jwt.js';
 
 const dataService: DataService = getDataService();
 
-const TOKEN_EXPIRY = '24h';
+const TOKEN_EXPIRY = '10y';
 
 // Login user
 export const login = async (req: Request, res: Response): Promise<void> => {
@@ -64,8 +64,12 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       },
     };
 
-    jwt.sign(payload, JWT_SECRET, { expiresIn: TOKEN_EXPIRY }, (err, token) => {
-      if (err) throw err;
+    jwt.sign(
+      payload,
+      JWT_SECRET,
+      { expiresIn: TOKEN_EXPIRY },
+      (err: Error | null, token: string | undefined) => {
+        if (err) throw err;
       res.json({
         success: true,
         message: t('api.success.login_successful'),
@@ -121,8 +125,12 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       },
     };
 
-    jwt.sign(payload, JWT_SECRET, { expiresIn: TOKEN_EXPIRY }, (err, token) => {
-      if (err) throw err;
+    jwt.sign(
+      payload,
+      JWT_SECRET,
+      { expiresIn: TOKEN_EXPIRY },
+      (err: Error | null, token: string | undefined) => {
+        if (err) throw err;
       res.json({
         success: true,
         token,
