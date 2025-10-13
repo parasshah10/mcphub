@@ -3,14 +3,15 @@ import { useTranslation } from 'react-i18next'
 import { Server, EnvVar, ServerFormData } from '@/types'
 
 interface ServerFormProps {
-  onSubmit: (payload: any) => void
-  onCancel: () => void
-  initialData?: Server | null
-  modalTitle: string
-  formError?: string | null
+onSubmit: (payload: any) => void
+onCancel: () => void
+initialData?: Server | null
+modalTitle: string
+formError?: string | null
+mode?: 'add' | 'edit' | 'clone'
 }
 
-const ServerForm = ({ onSubmit, onCancel, initialData = null, modalTitle, formError = null }: ServerFormProps) => {
+const ServerForm = ({ onSubmit, onCancel, initialData = null, modalTitle, formError = null, mode = 'add' }: ServerFormProps) => {
   const { t } = useTranslation()
 
   // Determine the initial server type from the initialData
@@ -92,7 +93,7 @@ const ServerForm = ({ onSubmit, onCancel, initialData = null, modalTitle, formEr
 
   const [isRequestOptionsExpanded, setIsRequestOptionsExpanded] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
-  const isEdit = !!initialData
+  const isEdit = mode === 'edit'
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -910,7 +911,7 @@ const ServerForm = ({ onSubmit, onCancel, initialData = null, modalTitle, formEr
             type="submit"
             className="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded btn-primary"
           >
-            {isEdit ? t('server.save') : t('server.add')}
+            {mode === 'edit' ? t('server.save') : t('server.add')}
           </button>
         </div>
       </form>

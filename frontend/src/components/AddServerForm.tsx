@@ -3,12 +3,12 @@ import { useTranslation } from 'react-i18next'
 import ServerForm from './ServerForm'
 import { apiPost } from '../utils/fetchInterceptor'
 import { detectVariables } from '../utils/variableDetection'
-import { ServerConfig } from '@/types'
+import { Server } from '@/types'
 
 interface AddServerFormProps {
-  onAdd: () => void
-  onCancel: () => void
-  initialData?: Partial<ServerConfig> | null
+onAdd: () => void
+onCancel: () => void
+initialData?: Server | null
 }
 
 const AddServerForm = ({ onAdd, onCancel, initialData }: AddServerFormProps) => {
@@ -17,7 +17,7 @@ const AddServerForm = ({ onAdd, onCancel, initialData }: AddServerFormProps) => 
   const [confirmationVisible, setConfirmationVisible] = useState(false)
   const [pendingPayload, setPendingPayload] = useState<any>(null)
   const [detectedVariables, setDetectedVariables] = useState<string[]>([])
-  const [serverData, setServerData] = useState<Partial<ServerConfig> | null>(initialData)
+  const [serverData, setServerData] = useState<Server | null>(initialData || null)
 
   useEffect(() => {
     setServerData(initialData)
@@ -83,11 +83,12 @@ const AddServerForm = ({ onAdd, onCancel, initialData }: AddServerFormProps) => 
     <>
       <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
         <ServerForm
-          onSubmit={handleSubmit}
-          onCancel={onCancel}
-          modalTitle={t('server.addServer')}
-          formError={error}
-          initialData={serverData}
+        onSubmit={handleSubmit}
+        onCancel={onCancel}
+        modalTitle={t('server.addServer')}
+        formError={error}
+        initialData={serverData}
+        mode={serverData ? 'clone' : 'add'}
         />
       </div>
 

@@ -50,11 +50,12 @@ const EditServerForm = ({ server, onEdit, onCancel }: EditServerFormProps) => {
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
       <ServerForm
-        onSubmit={handleSubmit}
-        onCancel={onCancel}
-        initialData={server}
-        modalTitle={t('server.editTitle', { serverName: server.name })}
-        formError={error}
+      onSubmit={handleSubmit}
+      onCancel={onCancel}
+      initialData={server}
+      modalTitle={t('server.editTitle', { serverName: server.name })}
+      formError={error}
+      mode="edit"
       />
     </div>
   )

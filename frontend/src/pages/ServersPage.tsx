@@ -36,13 +36,17 @@ const ServersPage: React.FC = () => {
   };
 
   const handleCloneClick = async (server: Server) => {
-    const fullServerData = await handleServerEdit(server);
-    if (fullServerData) {
-      const clonedConfig = { ...fullServerData.config };
-      clonedConfig.name = `${fullServerData.name}-copy`;
-      setInitialServerData(clonedConfig);
-      setShowAddServerModal(true);
-    }
+  const fullServerData = await handleServerEdit(server);
+  if (fullServerData) {
+  // Create a cloned server object with proper structure
+  const clonedServer: Server = {
+  ...fullServerData,
+  name: `${fullServerData.name}-copy`,
+  status: 'disconnected' as const,
+  };
+  setInitialServerData(clonedServer);
+  setShowAddServerModal(true);
+  }
   };
 
   const handleAddClick = () => {
