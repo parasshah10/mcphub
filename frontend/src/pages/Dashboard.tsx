@@ -1,11 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useServerData } from '@/hooks/useServerData';
 import { Server } from '@/types';
+import EndpointsModal from '@/components/EndpointsModal';
+import { Link } from 'lucide-react';
 
 const DashboardPage: React.FC = () => {
-  const { t } = useTranslation();
-  const { servers, error, setError, isLoading } = useServerData({ refreshOnMount: true });
+const { t } = useTranslation();
+const { servers, error, setError, isLoading } = useServerData({ refreshOnMount: true });
+const [showGlobalEndpoints, setShowGlobalEndpoints] = useState(false);
 
   // Calculate server statistics
   const serverStats = {
@@ -120,8 +123,36 @@ const DashboardPage: React.FC = () => {
             </div>
 
           </div>
-        </div>
-      )}
+          
+          {/* Global API Endpoints */}
+          <div className="bg-white rounded-lg shadow p-6 dashboard-card">
+          <div className="flex items-center justify-between">
+          <div className="flex items-center">
+          <div className="p-3 rounded-full bg-purple-100 text-purple-800 icon-container">
+          <Link size={24} />
+          </div>
+          <div className="ml-4">
+          <h2 className="text-xl font-semibold text-gray-700">{t('pages.dashboard.globalEndpoints')}</h2>
+          <p className="text-sm text-gray-500 mt-1">API access URLs</p>
+          </div>
+          </div>
+          <button
+          onClick={() => setShowGlobalEndpoints(true)}
+          className="px-4 py-2 bg-blue-100 text-blue-800 rounded hover:bg-blue-200 text-sm transition-colors btn-primary"
+          >
+          View Endpoints
+          </button>
+          </div>
+          </div>
+          </div>
+          )}
+          
+          <EndpointsModal
+          isOpen={showGlobalEndpoints}
+          onClose={() => setShowGlobalEndpoints(false)}
+          type="global"
+          title="Global API Endpoints"
+          />
 
       {/* Recent activity list */}
       {servers.length > 0 && !isLoading && (

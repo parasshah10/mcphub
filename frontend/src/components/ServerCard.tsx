@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Server } from '@/types'
-import { ChevronDown, ChevronRight, AlertCircle, Copy, Check } from 'lucide-react'
+import { ChevronDown, ChevronRight, AlertCircle, Copy, Check, Link } from 'lucide-react'
 import { StatusBadge } from '@/components/ui/Badge'
 import ToolCard from '@/components/ui/ToolCard'
 import PromptCard from '@/components/ui/PromptCard'
 import DeleteDialog from '@/components/ui/DeleteDialog'
+import EndpointsModal from '@/components/EndpointsModal'
 import { useToast } from '@/contexts/ToastContext'
 
 interface ServerCardProps {
@@ -25,6 +26,7 @@ const ServerCard = ({ server, onRemove, onEdit, onClone, onToggle, onRefresh }: 
   const [isToggling, setIsToggling] = useState(false)
   const [showErrorPopover, setShowErrorPopover] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [showEndpointsModal, setShowEndpointsModal] = useState(false)
   const errorPopoverRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -51,8 +53,13 @@ const ServerCard = ({ server, onRemove, onEdit, onClone, onToggle, onRefresh }: 
   }
 
   const handleClone = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    onClone(server)
+  e.stopPropagation()
+  onClone(server)
+  }
+  
+  const handleShowEndpoints = (e: React.MouseEvent) => {
+  e.stopPropagation()
+  setShowEndpointsModal(true)
   }
 
   const handleToggle = async (e: React.MouseEvent) => {
@@ -236,19 +243,26 @@ const ServerCard = ({ server, onRemove, onEdit, onClone, onToggle, onRefresh }: 
             )}
           </div>
           <div className="flex space-x-2">
-            <button
-              onClick={handleClone}
-              className="p-2 bg-gray-100 text-gray-600 rounded hover:bg-gray-200 btn-secondary"
-              title={t('server.clone') || 'Clone'}
-            >
-              <Copy size={14} />
-            </button>
-            <button
-              onClick={handleEdit}
-              className="px-3 py-1 bg-blue-100 text-blue-800 rounded hover:bg-blue-200 text-sm btn-primary"
-            >
-              {t('server.edit')}
-            </button>
+          <button
+          onClick={handleClone}
+          className="p-2 bg-gray-100 text-gray-600 rounded hover:bg-gray-200 btn-secondary"
+          title={t('server.clone') || 'Clone'}
+          >
+          <Copy size={14} />
+          </button>
+          <button
+          onClick={handleShowEndpoints}
+          className="p-2 bg-gray-100 text-gray-600 rounded hover:bg-gray-200 btn-secondary"
+          title="API Endpoints"
+          >
+          <Link size={14} />
+          </button>
+          <button
+          onClick={handleEdit}
+          className="px-3 py-1 bg-blue-100 text-blue-800 rounded hover:bg-blue-200 text-sm btn-primary"
+          >
+          {t('server.edit')}
+          </button>
             <div className="flex items-center">
               <button
                 onClick={handleToggle}
@@ -313,12 +327,19 @@ const ServerCard = ({ server, onRemove, onEdit, onClone, onToggle, onRefresh }: 
       </div>
 
       <DeleteDialog
-        isOpen={showDeleteDialog}
-        onClose={() => setShowDeleteDialog(false)}
-        onConfirm={handleConfirmDelete}
-        serverName={server.name}
+      isOpen={showDeleteDialog}
+      onClose={() => setShowDeleteDialog(false)}
+      onConfirm={handleConfirmDelete}
+      serverName={server.name}
       />
-    </>
+      
+      <EndpointsModal
+      isOpen={showEndpointsModal}
+      onClose={() => setShowEndpointsModal(false)}
+      type="server"
+      name={server.name}
+      />
+      </>
   )
 }
 

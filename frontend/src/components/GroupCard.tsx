@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Group, Server, IGroupServerConfig } from '@/types'
 import { Edit, Trash, Copy, Check, Link, FileCode, DropdownIcon, Wrench } from '@/components/icons/LucideIcons'
 import DeleteDialog from '@/components/ui/DeleteDialog'
+import EndpointsModal from '@/components/EndpointsModal'
 import { useToast } from '@/contexts/ToastContext'
 import { useSettingsData } from '@/hooks/useSettingsData'
 
@@ -25,6 +26,7 @@ const GroupCard = ({
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [copied, setCopied] = useState(false)
   const [showCopyDropdown, setShowCopyDropdown] = useState(false)
+  const [showEndpointsModal, setShowEndpointsModal] = useState(false)
   const [expandedServer, setExpandedServer] = useState<string | null>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
@@ -180,23 +182,30 @@ const GroupCard = ({
           )}
         </div>
         <div className="flex items-center space-x-3">
-          <div className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-sm btn-secondary">
-            {t('groups.serverCount', { count: group.servers.length })}
-          </div>
-          <button
-            onClick={handleEdit}
-            className="text-gray-500 hover:text-gray-700"
-            title={t('groups.edit')}
-          >
-            <Edit size={18} />
-          </button>
-          <button
-            onClick={handleDelete}
-            className="text-gray-500 hover:text-red-600"
-            title={t('groups.delete')}
-          >
-            <Trash size={18} />
-          </button>
+        <div className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-sm btn-secondary">
+        {t('groups.serverCount', { count: group.servers.length })}
+        </div>
+        <button
+        onClick={() => setShowEndpointsModal(true)}
+        className="text-gray-500 hover:text-gray-700"
+        title="API Endpoints"
+        >
+        <Link size={18} />
+        </button>
+        <button
+        onClick={handleEdit}
+        className="text-gray-500 hover:text-gray-700"
+        title={t('groups.edit')}
+        >
+        <Edit size={18} />
+        </button>
+        <button
+        onClick={handleDelete}
+        className="text-gray-500 hover:text-red-600"
+        title={t('groups.delete')}
+        >
+        <Trash size={18} />
+        </button>
         </div>
       </div>
 
@@ -271,13 +280,21 @@ const GroupCard = ({
       </div>
 
       <DeleteDialog
-        isOpen={showDeleteDialog}
-        onClose={() => setShowDeleteDialog(false)}
-        onConfirm={handleConfirmDelete}
-        serverName={group.name}
-        isGroup={true}
+      isOpen={showDeleteDialog}
+      onClose={() => setShowDeleteDialog(false)}
+      onConfirm={handleConfirmDelete}
+      serverName={group.name}
+      isGroup={true}
       />
-    </div>
+      
+      <EndpointsModal
+      isOpen={showEndpointsModal}
+      onClose={() => setShowEndpointsModal(false)}
+      type="group"
+      name={group.id}
+      title={`API Endpoints: ${group.name}`}
+      />
+      </div>
   )
 }
 
