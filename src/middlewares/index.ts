@@ -17,6 +17,17 @@ export const errorHandler = (
   });
 };
 
+// An array of regular expressions for public API paths that do not require authentication.
+// This provides a more precise and secure way to define public endpoints.
+const publicApiPaths = [
+  /^\/auth\/login$/, // User login
+  /^\/openapi\.json$/, // Global OpenAPI spec
+  /^\/openapi\/(servers|stats)$/, // OpenAPI server list and stats
+  /^\/[^/]+\/openapi\.json$/, // Server/group-specific OpenAPI spec (e.g., /calculator/openapi.json)
+  /^\/tools\//, // Global tool execution
+  /^\/[^/]+\/tools\//, // Server/group-scoped tool execution (e.g., /calculator/tools/...)
+];
+
 export const initMiddlewares = (app: express.Application): void => {
   // Apply i18n middleware first to detect language for all requests
   app.use(i18nMiddleware);
@@ -24,7 +35,7 @@ export const initMiddlewares = (app: express.Application): void => {
   // Serve static files from the dynamically determined frontend path
   // Note: Static files will be handled by the server directly, not here
 
-  app.use((req, res, next) => {
+  app.use((req: Request, res: Response, next: NextFunction) => {
     const basePath = config.basePath;
     const path = req.path;
 
@@ -43,20 +54,17 @@ export const initMiddlewares = (app: express.Application): void => {
     }
   });
 
-  // Protect API routes with authentication middleware, but exclude auth endpoints
-  app.use(`${config.basePath}/api`, (req, res, next) => {
-    // Skip authentication for public endpoints like login and OpenAPI specs
-    if (
-      req.path === '/auth/login' ||
-      req.path.startsWith('/openapi') || // Catches /openapi.json, /openapi/servers, etc.
-      req.path.startsWith('/tools/') // Catches tool execution endpoints
-    ) {
+  // Protect API routes with authentication middleware, but exclude public endpoints
+  app.use(`${config.basePath}/api`, (req: Request, res: Response, next: NextFunction) => {
+    const isPublicPath = publicApiPaths.some((pattern) => pattern.test(req.path));
+
+    if (isPublicPath) {
       console.log(`[DEBUG] Skipping auth for public API path: ${req.path}`);
       next();
     } else {
       console.log(`[DEBUG] Applying auth for protected API path: ${req.path}`);
       // Apply authentication middleware first
-      auth(req, res, (err) => {
+      auth(req, res, (err: any) => {
         if (err) {
           next(err);
         } else {
