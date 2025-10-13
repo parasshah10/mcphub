@@ -62,7 +62,7 @@ const [showGlobalEndpoints, setShowGlobalEndpoints] = useState(false);
       )}
 
       {!isLoading && (
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-5">
           {/* Total servers */}
           <div className="bg-white rounded-lg shadow p-6 dashboard-card">
             <div className="flex items-center">
@@ -126,22 +126,19 @@ const [showGlobalEndpoints, setShowGlobalEndpoints] = useState(false);
           
           {/* Global API Endpoints */}
           <div className="bg-white rounded-lg shadow p-6 dashboard-card">
-          <div className="flex items-center justify-between">
           <div className="flex items-center">
           <div className="p-3 rounded-full bg-purple-100 text-purple-800 icon-container">
           <Link size={24} />
           </div>
           <div className="ml-4">
-          <h2 className="text-xl font-semibold text-gray-700">{t('pages.dashboard.globalEndpoints')}</h2>
-          <p className="text-sm text-gray-500 mt-1">API access URLs</p>
-          </div>
-          </div>
+          <h2 className="text-xl font-semibold text-gray-700">Global Endpoints</h2>
           <button
           onClick={() => setShowGlobalEndpoints(true)}
-          className="px-4 py-2 bg-blue-100 text-blue-800 rounded hover:bg-blue-200 text-sm transition-colors btn-primary"
+          className="text-sm text-blue-600 hover:text-blue-800 mt-1 transition-colors"
           >
-          View Endpoints
+          View URLs →
           </button>
+          </div>
           </div>
           </div>
           </div>
