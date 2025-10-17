@@ -133,41 +133,45 @@ const GroupCard = ({
 
   return (
     <div className="bg-white shadow rounded-lg p-6 ">
-      <div className="flex justify-between items-center mb-4">
-        <div>
-          <div className="flex items-center">
-            <h2 className="text-xl font-semibold text-gray-800">{group.name}</h2>
-            <div className="flex items-center ml-3">
-              <span className="text-xs text-gray-500 mr-1">{group.id}</span>
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 sm:gap-0 mb-4">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start flex-wrap gap-2">
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-800 dark:text-white break-words">
+              {group.name}
+            </h2>
+            <div className="flex items-center">
+              <span className="text-xs text-gray-500 dark:text-gray-400 mr-1 break-all">
+                {group.id}
+              </span>
               <div className="relative" ref={dropdownRef}>
                 <button
                   onClick={() => setShowCopyDropdown(!showCopyDropdown)}
-                  className="p-1 text-gray-400 hover:text-gray-600 transition-colors flex items-center"
+                  className="p-1 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 transition-colors flex items-center"
                   title={t('common.copy')}
                 >
-                  {copied ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
-                  <DropdownIcon size={12} className="ml-1" />
+                  {copied ? <Check size={12} className="text-green-500" /> : <Copy size={12} />}
+                  <DropdownIcon size={10} className="ml-0.5" />
                 </button>
 
                 {showCopyDropdown && (
-                  <div className="absolute top-full left-0 mt-1 bg-white shadow-lg rounded-md border border-gray-200 py-1 z-10 min-w-[140px]">
+                  <div className="absolute top-full right-0 sm:left-0 mt-1 bg-white dark:bg-gray-800 shadow-lg rounded-md border border-gray-200 dark:border-gray-700 py-1 z-10 min-w-[140px]">
                     <button
                       onClick={handleCopyId}
-                      className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                      className="w-full px-3 py-2 text-left text-xs sm:text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
                     >
                       <Copy size={12} className="mr-2" />
                       {t('common.copyId')}
                     </button>
                     <button
                       onClick={handleCopyUrl}
-                      className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                      className="w-full px-3 py-2 text-left text-xs sm:text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
                     >
                       <Link size={12} className="mr-2" />
                       {t('common.copyUrl')}
                     </button>
                     <button
                       onClick={handleCopyJson}
-                      className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                      className="w-full px-3 py-2 text-left text-xs sm:text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
                     >
                       <FileCode size={12} className="mr-2" />
                       {t('common.copyJson')}
@@ -178,34 +182,38 @@ const GroupCard = ({
             </div>
           </div>
           {group.description && (
-            <p className="text-gray-600 text-sm mt-1">{group.description}</p>
+            <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm mt-1 break-words">
+              {group.description}
+            </p>
           )}
         </div>
-        <div className="flex items-center space-x-3">
-        <div className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-sm btn-secondary">
-        {t('groups.serverCount', { count: group.servers.length })}
-        </div>
-        <button
-        onClick={() => setShowEndpointsModal(true)}
-        className="text-gray-500 hover:text-gray-700"
-        title="API Endpoints"
-        >
-        <Link size={18} />
-        </button>
-        <button
-        onClick={handleEdit}
-        className="text-gray-500 hover:text-gray-700"
-        title={t('groups.edit')}
-        >
-        <Edit size={18} />
-        </button>
-        <button
-        onClick={handleDelete}
-        className="text-gray-500 hover:text-red-600"
-        title={t('groups.delete')}
-        >
-        <Trash size={18} />
-        </button>
+        
+        {/* Action buttons - responsive */}
+        <div className="flex items-center flex-wrap sm:flex-nowrap gap-2 sm:space-x-3">
+          <div className="bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm btn-secondary whitespace-nowrap">
+            {t('groups.serverCount', { count: group.servers.length })}
+          </div>
+          <button
+            onClick={() => setShowEndpointsModal(true)}
+            className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+            title="API Endpoints"
+          >
+            <Link size={16} className="sm:w-[18px] sm:h-[18px]" />
+          </button>
+          <button
+            onClick={handleEdit}
+            className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+            title={t('groups.edit')}
+          >
+            <Edit size={16} className="sm:w-[18px] sm:h-[18px]" />
+          </button>
+          <button
+            onClick={handleDelete}
+            className="p-2 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400"
+            title={t('groups.delete')}
+          >
+            <Trash size={16} className="sm:w-[18px] sm:h-[18px]" />
+          </button>
         </div>
       </div>
 

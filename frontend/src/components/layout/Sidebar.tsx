@@ -7,6 +7,7 @@ import UserProfileMenu from '@/components/ui/UserProfileMenu';
 
 interface SidebarProps {
   collapsed: boolean;
+  onNavigate?: () => void;
 }
 
 interface MenuItem {
@@ -15,14 +16,12 @@ interface MenuItem {
   icon: React.ReactNode;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ collapsed }) => {
+const Sidebar: React.FC<SidebarProps> = ({ collapsed, onNavigate }) => {
   const { t } = useTranslation();
   const { auth } = useAuth();
 
-  // Application version from package.json (accessed via Vite environment variables)
   const appVersion = import.meta.env.PACKAGE_VERSION as string;
 
-  // Menu item configuration
   const menuItems: MenuItem[] = [
     {
       path: '/',
@@ -83,33 +82,36 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed }) => {
 
   return (
     <aside
-      className={`bg-white dark:bg-gray-800 shadow-sm transition-all duration-300 ease-in-out flex flex-col h-full relative ${collapsed ? 'w-16' : 'w-64'
-        }`}
+      className={`bg-white dark:bg-gray-800 shadow-sm transition-all duration-300 ease-in-out flex flex-col h-full relative ${
+        collapsed ? 'w-16' : 'w-64'
+      }`}
     >
       {/* Scrollable navigation area */}
       <div className="overflow-y-auto flex-grow">
-        <nav className="p-3 space-y-1">
+        <nav className="p-2 sm:p-3 space-y-1">
           {menuItems.map((item) => (
             <NavLink
               key={item.path}
               to={item.path}
+              onClick={onNavigate}
               className={({ isActive }) =>
-                `flex items-center px-2.5 py-2 rounded-lg transition-colors duration-200
-         ${isActive
-                  ? 'bg-blue-50 text-blue-700'
-                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-100'}`
+                `flex items-center px-2 sm:px-2.5 py-2.5 sm:py-2 rounded-lg transition-colors duration-200 ${
+                  isActive
+                    ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                }`
               }
               end={item.path === '/'}
             >
               <span className="flex-shrink-0">{item.icon}</span>
-              {!collapsed && <span className="ml-3">{item.label}</span>}
+              {!collapsed && <span className="ml-3 text-sm sm:text-base">{item.label}</span>}
             </NavLink>
           ))}
         </nav>
       </div>
 
-      {/* User profile menu fixed at the bottom */}
-      <div className="p-3 bg-white dark:bg-gray-800">
+      {/* User profile menu fixed at bottom */}
+      <div className="p-2 sm:p-3 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
         <UserProfileMenu collapsed={collapsed} version={appVersion} />
       </div>
     </aside>

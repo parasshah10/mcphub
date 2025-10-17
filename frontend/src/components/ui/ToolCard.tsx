@@ -142,14 +142,13 @@ const ToolCard = ({ tool, server, onToggle, onDescriptionUpdate }: ToolCardProps
 
   return (
     <div className="bg-white border border-gray-200 shadow rounded-lg p-4 mb-4">
-      <div
-        className="flex justify-between items-center cursor-pointer"
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 sm:gap-0 cursor-pointer"
         onClick={() => setIsExpanded(!isExpanded)}
       >
-        <div className="flex-1">
-          <h3 className="text-lg font-medium text-gray-900">
+        <div className="flex-1 min-w-0">
+          <h3 className="text-base sm:text-lg font-medium text-gray-900 dark:text-white break-words">
             {tool.name.replace(server + '-', '')}
-            <span className="ml-2 text-sm font-normal text-gray-600 inline-flex items-center">
+            <span className="ml-2 text-xs sm:text-sm font-normal text-gray-600 dark:text-gray-400 inline-flex items-center flex-wrap">
               {isEditingDescription ? (
                 <>
                   <input

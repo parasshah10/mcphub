@@ -18,16 +18,17 @@ const Pagination: React.FC<PaginationProps> = ({
 
     // Always display first page
     buttons.push(
-      <button
-        key="first"
-        onClick={() => onPageChange(1)}
-        className={`px-3 py-1 mx-1 rounded ${currentPage === 1
-          ? 'bg-blue-500 text-white btn-primary'
-          : 'bg-gray-200 hover:bg-gray-300 text-gray-700 btn-secondary'
+        <button
+          key="first"
+          onClick={() => onPageChange(1)}
+          className={`px-2 sm:px-3 py-1 mx-0.5 sm:mx-1 rounded text-xs sm:text-sm ${
+            currentPage === 1
+              ? 'bg-blue-500 text-white btn-primary'
+              : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 btn-secondary'
           }`}
-      >
-        1
-      </button>
+        >
+          1
+        </button>
     );
 
     // Start range
@@ -48,10 +49,11 @@ const Pagination: React.FC<PaginationProps> = ({
         <button
           key={i}
           onClick={() => onPageChange(i)}
-          className={`px-3 py-1 mx-1 rounded ${currentPage === i
-            ? 'bg-blue-500 text-white btn-primary'
-            : 'bg-gray-200 hover:bg-gray-300 text-gray-700 btn-secondary'
-            }`}
+          className={`px-2 sm:px-3 py-1 mx-0.5 sm:mx-1 rounded text-xs sm:text-sm ${
+            currentPage === i
+              ? 'bg-blue-500 text-white btn-primary'
+              : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 btn-secondary'
+          }`}
         >
           {i}
         </button>
@@ -73,10 +75,11 @@ const Pagination: React.FC<PaginationProps> = ({
         <button
           key="last"
           onClick={() => onPageChange(totalPages)}
-          className={`px-3 py-1 mx-1 rounded ${currentPage === totalPages
-            ? 'bg-blue-500 text-white btn-primary'
-            : 'bg-gray-200 hover:bg-gray-300 text-gray-700 btn-secondary'
-            }`}
+          className={`px-2 sm:px-3 py-1 mx-0.5 sm:mx-1 rounded text-xs sm:text-sm ${
+            currentPage === totalPages
+              ? 'bg-blue-500 text-white btn-primary'
+              : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 btn-secondary'
+          }`}
         >
           {totalPages}
         </button>
@@ -92,29 +95,33 @@ const Pagination: React.FC<PaginationProps> = ({
   }
 
   return (
-    <div className="flex justify-center items-center my-6">
+    <div className="flex justify-center items-center my-4 sm:my-6">
       <button
         onClick={() => onPageChange(Math.max(1, currentPage - 1))}
         disabled={currentPage === 1}
-        className={`px-3 py-1 rounded mr-2 ${currentPage === 1
-          ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-          : 'bg-gray-200 hover:bg-gray-300 text-gray-700 btn-secondary'
-          }`}
+        className={`px-2 sm:px-3 py-1 rounded mr-1 sm:mr-2 text-xs sm:text-sm ${
+          currentPage === 1
+            ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
+            : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 btn-secondary'
+        }`}
       >
-        &laquo; Prev
+        <span className="hidden sm:inline">&laquo; Prev</span>
+        <span className="sm:hidden">&laquo;</span>
       </button>
 
-      <div className="flex">{getPageButtons()}</div>
+      <div className="flex overflow-x-auto max-w-[200px] sm:max-w-none">{getPageButtons()}</div>
 
       <button
         onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
         disabled={currentPage === totalPages}
-        className={`px-3 py-1 rounded ml-2 ${currentPage === totalPages
-          ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-          : 'bg-gray-200 hover:bg-gray-300 text-gray-700 btn-secondary'
-          }`}
+        className={`px-2 sm:px-3 py-1 rounded ml-1 sm:ml-2 text-xs sm:text-sm ${
+          currentPage === totalPages
+            ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
+            : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 btn-secondary'
+        }`}
       >
-        Next &raquo;
+        <span className="hidden sm:inline">Next &raquo;</span>
+        <span className="sm:hidden">&raquo;</span>
       </button>
     </div>
   );

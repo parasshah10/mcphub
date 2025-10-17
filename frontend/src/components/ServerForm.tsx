@@ -273,11 +273,13 @@ const ServerForm = ({ onSubmit, onCancel, initialData = null, modalTitle, formEr
   }
 
   return (
-    <div className="bg-white shadow rounded-lg p-6 w-full max-w-xl max-h-screen overflow-y-auto">
+    <div className="bg-white dark:bg-gray-800 shadow-lg rounded-none sm:rounded-lg p-4 sm:p-6 w-full sm:max-w-xl h-full sm:h-auto overflow-y-auto sm:max-h-[90vh]">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold text-gray-900">{modalTitle}</h2>
-        <button onClick={onCancel} className="text-gray-500 hover:text-gray-700">
-          ✕
+        <button onClick={onCancel} className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 p-2 sm:p-0">
+          <svg className="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
         </button>
       </div>
 
@@ -307,7 +309,7 @@ const ServerForm = ({ onSubmit, onCancel, initialData = null, modalTitle, formEr
 
         <div className="mb-4">
           <label className="block text-gray-700 text-sm font-bold mb-2">{t('server.type')}</label>
-          <div className="flex space-x-4">
+          <div className="flex flex-wrap gap-3">
             <div>
               <input
                 type="radio"

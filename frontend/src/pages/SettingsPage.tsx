@@ -235,13 +235,15 @@ const SettingsPage: React.FC = () => {
 
       {/* Smart Routing Configuration Settings */}
       <PermissionChecker permissions={PERMISSIONS.SETTINGS_SMART_ROUTING}>
-        <div className="bg-white shadow rounded-lg py-4 px-6 mb-6 page-card dashboard-card">
+        <div className="bg-white dark:bg-gray-800 shadow rounded-lg py-3 px-4 sm:py-4 sm:px-6 mb-4 sm:mb-6 page-card dashboard-card">
           <div
-            className="flex justify-between items-center cursor-pointer transition-colors duration-200 hover:text-blue-600"
+            className="flex justify-between items-center cursor-pointer py-1 transition-colors duration-200 hover:text-blue-600 dark:hover:text-blue-400"
             onClick={() => toggleSection('smartRoutingConfig')}
           >
-            <h2 className="font-semibold text-gray-800">{t('pages.settings.smartRouting')}</h2>
-            <span className="text-gray-500 transition-transform duration-200">
+            <h2 className="font-semibold text-gray-800 dark:text-white text-sm sm:text-base">
+              {t('pages.settings.smartRouting')}
+            </h2>
+            <span className="text-gray-500 dark:text-gray-400 transition-transform duration-200 text-lg">
               {sectionsVisible.smartRoutingConfig ? '▼' : '►'}
             </span>
           </div>
@@ -362,13 +364,15 @@ const SettingsPage: React.FC = () => {
 
       {/* MCPRouter Configuration Settings */}
       <PermissionChecker permissions={PERMISSIONS.SETTINGS_INSTALL_CONFIG}>
-        <div className="bg-white shadow rounded-lg py-4 px-6 mb-6 page-card dashboard-card">
+        <div className="bg-white dark:bg-gray-800 shadow rounded-lg py-3 px-4 sm:py-4 sm:px-6 mb-4 sm:mb-6 page-card dashboard-card">
           <div
-            className="flex justify-between items-center cursor-pointer transition-colors duration-200 hover:text-blue-600"
+            className="flex justify-between items-center cursor-pointer py-1 transition-colors duration-200 hover:text-blue-600 dark:hover:text-blue-400"
             onClick={() => toggleSection('mcpRouterConfig')}
           >
-            <h2 className="font-semibold text-gray-800">{t('settings.mcpRouterConfig')}</h2>
-            <span className="text-gray-500 transition-transform duration-200">
+            <h2 className="font-semibold text-gray-800 dark:text-white text-sm sm:text-base">
+              {t('settings.mcpRouterConfig')}
+            </h2>
+            <span className="text-gray-500 dark:text-gray-400 transition-transform duration-200 text-lg">
               {sectionsVisible.mcpRouterConfig ? '▼' : '►'}
             </span>
           </div>
@@ -428,13 +432,15 @@ const SettingsPage: React.FC = () => {
       </PermissionChecker>
 
       {/* Route Configuration Settings */}
-      <div className="bg-white shadow rounded-lg py-4 px-6 mb-6 dashboard-card">
+      <div className="bg-white dark:bg-gray-800 shadow rounded-lg py-3 px-4 sm:py-4 sm:px-6 mb-4 sm:mb-6 page-card dashboard-card">
         <div
-          className="flex justify-between items-center cursor-pointer"
+          className="flex justify-between items-center cursor-pointer py-1 transition-colors duration-200 hover:text-blue-600 dark:hover:text-blue-400"
           onClick={() => toggleSection('routingConfig')}
         >
-          <h2 className="font-semibold text-gray-800">{t('pages.settings.routeConfig')}</h2>
-          <span className="text-gray-500">
+          <h2 className="font-semibold text-gray-800 dark:text-white text-sm sm:text-base">
+            {t('pages.settings.routeConfig')}
+          </h2>
+          <span className="text-gray-500 dark:text-gray-400 transition-transform duration-200 text-lg">
             {sectionsVisible.routingConfig ? '▼' : '►'}
           </span>
         </div>
@@ -523,13 +529,15 @@ const SettingsPage: React.FC = () => {
 
       {/* Installation Configuration Settings */}
       <PermissionChecker permissions={PERMISSIONS.SETTINGS_INSTALL_CONFIG}>
-        <div className="bg-white shadow rounded-lg py-4 px-6 mb-6 dashboard-card">
+        <div className="bg-white dark:bg-gray-800 shadow rounded-lg py-3 px-4 sm:py-4 sm:px-6 mb-4 sm:mb-6 page-card dashboard-card">
           <div
-            className="flex justify-between items-center cursor-pointer"
+            className="flex justify-between items-center cursor-pointer py-1 transition-colors duration-200 hover:text-blue-600 dark:hover:text-blue-400"
             onClick={() => toggleSection('installConfig')}
           >
-            <h2 className="font-semibold text-gray-800">{t('settings.installConfig')}</h2>
-            <span className="text-gray-500">
+            <h2 className="font-semibold text-gray-800 dark:text-white text-sm sm:text-base">
+              {t('settings.installConfig')}
+            </h2>
+            <span className="text-gray-500 dark:text-gray-400 transition-transform duration-200 text-lg">
               {sectionsVisible.installConfig ? '▼' : '►'}
             </span>
           </div>
@@ -613,13 +621,15 @@ const SettingsPage: React.FC = () => {
       </PermissionChecker>
 
       {/* Change Password */}
-      <div className="bg-white shadow rounded-lg py-4 px-6 mb-6 dashboard-card">
+      <div className="bg-white dark:bg-gray-800 shadow rounded-lg py-3 px-4 sm:py-4 sm:px-6 mb-4 sm:mb-6 page-card dashboard-card">
         <div
-          className="flex justify-between items-center cursor-pointer"
+          className="flex justify-between items-center cursor-pointer py-1 transition-colors duration-200 hover:text-blue-600 dark:hover:text-blue-400"
           onClick={() => toggleSection('password')}
         >
-          <h2 className="font-semibold text-gray-800">{t('auth.changePassword')}</h2>
-          <span className="text-gray-500">
+          <h2 className="font-semibold text-gray-800 dark:text-white text-sm sm:text-base">
+            {t('auth.changePassword')}
+          </h2>
+          <span className="text-gray-500 dark:text-gray-400 transition-transform duration-200 text-lg">
             {sectionsVisible.password ? '▼' : '►'}
           </span>
         </div>

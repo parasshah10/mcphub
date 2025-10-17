@@ -96,9 +96,9 @@ document.body.removeChild(textArea)
 const modalTitle = title || (type === 'global' ? 'Global API Endpoints' : `API Endpoints${name ? `: ${name}` : ''}`)
 
 return (
-<div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-<div className="bg-white rounded-lg shadow-xl max-w-2xl w-full">
-<div className="p-6">
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+        <div className="p-4 sm:p-6 overflow-y-auto">
 {/* Header */}
 <div className="flex items-center justify-between mb-6">
 <div className="flex items-center space-x-3">
@@ -118,33 +118,35 @@ className="text-gray-400 hover:text-gray-600 transition-colors"
 {/* Endpoints List */}
 <div className="space-y-5">
 {endpoints.map((endpoint, index) => (
-<div key={index} className="space-y-2">
-<div className="flex items-center justify-between">
-<label className="text-sm font-medium text-gray-700">
-{endpoint.label}
-</label>
-<span className="text-xs text-gray-500">{endpoint.description}</span>
-</div>
-<div className="flex items-center space-x-2">
-<input
-type="text"
-value={endpoint.url}
-readOnly
-className="flex-1 font-mono text-sm text-gray-800 bg-gray-50 border border-gray-200 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-/>
-<button
-onClick={() => copyToClipboard(endpoint.url, index)}
-className="p-2 text-gray-400 hover:text-gray-600 transition-colors bg-gray-100 hover:bg-gray-200 rounded"
-title="Copy URL"
->
-{copiedIndex === index ? (
-<Check size={16} className="text-green-500" />
-) : (
-<Copy size={16} />
-)}
-</button>
-</div>
-</div>
+              <div key={index} className="space-y-2">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-0">
+                  <label className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {endpoint.label}
+                  </label>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                    {endpoint.description}
+                  </span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="text"
+                    value={endpoint.url}
+                    readOnly
+                    className="flex-1 font-mono text-xs sm:text-sm text-gray-800 dark:text-gray-200 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded px-2 sm:px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent overflow-x-auto"
+                  />
+                  <button
+                    onClick={() => copyToClipboard(endpoint.url, index)}
+                    className="p-2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded flex-shrink-0"
+                    title="Copy URL"
+                  >
+                    {copiedIndex === index ? (
+                      <Check size={16} className="text-green-500" />
+                    ) : (
+                      <Copy size={16} />
+                    )}
+                  </button>
+                </div>
+              </div>
 ))}
 </div>
 

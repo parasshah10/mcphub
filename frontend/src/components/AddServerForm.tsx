@@ -20,7 +20,7 @@ const AddServerForm = ({ onAdd, onCancel, initialData }: AddServerFormProps) => 
   const [serverData, setServerData] = useState<Server | null>(initialData || null)
 
   useEffect(() => {
-    setServerData(initialData)
+    setServerData(initialData || null)
   }, [initialData])
 
   const handleConfirmSubmit = async () => {
@@ -81,7 +81,7 @@ const AddServerForm = ({ onAdd, onCancel, initialData }: AddServerFormProps) => 
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-0 sm:p-4">
         <ServerForm
         onSubmit={handleSubmit}
         onCancel={onCancel}

@@ -504,3 +504,142 @@ tbody tr:hover {
     0 4px 12px rgba(0, 0, 0, 0.15);
   border-radius: 12px;
 }
+
+/* ============================================
+   MOBILE RESPONSIVE ENHANCEMENTS
+   ============================================ */
+
+/* Extra small breakpoint for very small phones */
+@media (min-width: 375px) {
+  .xs\:inline {
+    display: inline;
+  }
+  .xs\:hidden {
+    display: none;
+  }
+  .xs\:col-span-2 {
+    grid-column: span 2 / span 2;
+  }
+}
+
+/* Mobile-friendly touch targets */
+@media (max-width: 640px) {
+  /* Increase touch target sizes on mobile */
+  button:not([role="switch"]), a {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Don't apply min-height/width to form inputs to preserve their appearance */
+  input[type="checkbox"], input[type="radio"] {
+    min-height: auto;
+    min-width: auto;
+  }
+
+  /* Adjust input padding for better mobile UX */
+  .form-input {
+    padding-top: 0.75rem !important;
+    padding-bottom: 0.75rem !important;
+    font-size: 16px !important; /* Prevent iOS zoom on focus */
+  }
+
+  /* Mobile-friendly modals */
+  .fixed.inset-0 > div {
+    margin: 0.5rem;
+    max-height: calc(100vh - 1rem);
+  }
+
+  /* Better mobile scrolling */
+  .overflow-y-auto {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Mobile card spacing */
+  .page-card {
+    margin-bottom: 0.75rem !important;
+  }
+
+  /* Mobile table improvements */
+  .table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  table {
+    min-width: 600px;
+  }
+
+  /* Mobile-friendly buttons */
+  .btn-primary, .btn-secondary, .btn-danger, .btn-warning {
+    padding: 0.625rem 0.875rem;
+    font-size: 0.875rem;
+    min-height: 40px;
+  }
+}
+
+/* Tablet adjustments */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .page-card {
+    padding: 1rem !important;
+  }
+}
+
+/* Improved dark mode transitions */
+.dark * {
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+/* Better focus states for accessibility and mobile */
+*:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Mobile-friendly dropdowns */
+@media (max-width: 640px) {
+  select {
+    font-size: 16px !important; /* Prevent iOS zoom */
+    padding: 0.75rem 0.5rem !important;
+  }
+}
+
+/* Safe area insets for notched devices */
+@supports (padding: max(0px)) {
+  .safe-area-inset-top {
+    padding-top: max(env(safe-area-inset-top), 0.5rem);
+  }
+  
+  .safe-area-inset-bottom {
+    padding-bottom: max(env(safe-area-inset-bottom), 0.5rem);
+  }
+}
+
+
+/* Touch-friendly hover states (only on devices that support hover) */
+@media (hover: hover) and (pointer: fine) {
+  .hover\:scale-105:hover {
+    transform: scale(1.05);
+  }
+}
+
+/* Remove hover effects on touch devices */
+@media (hover: none) {
+  .hover\:bg-gray-100:hover {
+    background-color: inherit;
+  }
+  
+  .hover\:text-gray-900:hover {
+    color: inherit;
+  }
+}
+
+/* Better mobile spacing */
+.mobile-spacing {
+  padding: 0.75rem;
+}
+
+@media (min-width: 640px) {
+  .mobile-spacing {
+    padding: 1.5rem;
+  }
+}
