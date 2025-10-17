@@ -68,11 +68,11 @@ const LoginPage: React.FC = () => {
       </div>
 
       {/* Main content */}
-      <div className="relative mx-auto flex min-h-screen w-full max-w-md items-center justify-center px-6 py-16">
-        <div className="w-full space-y-16">
+      <div className="relative mx-auto flex min-h-screen w-full max-w-md flex-col items-center justify-center px-4 py-8 sm:px-6">
+        <div className="w-full space-y-12 sm:space-y-16">
           {/* Centered slogan */}
-          <div className="flex justify-center w-full">
-            <h1 className="text-5xl sm:text-5xl font-extrabold leading-tight tracking-tight text-gray-900 dark:text-white whitespace-nowrap">
+          <div className="flex justify-center text-center w-full">
+            <h1 className="text-4xl sm:text-5xl font-extrabold leading-tight tracking-tight text-gray-900 dark:text-white">
               <span className="bg-gradient-to-r from-indigo-400 via-cyan-400 to-emerald-400 bg-clip-text text-transparent">
                 {t('auth.slogan')}
               </span>
@@ -80,11 +80,11 @@ const LoginPage: React.FC = () => {
           </div>
 
           {/* Centered login card */}
-          <div className="login-card relative w-full rounded-2xl border border-white/10 bg-white/60 p-8 shadow-xl backdrop-blur-md transition dark:border-white/10 dark:bg-gray-900/60">
-            <div className="absolute -top-24 right-12 h-40 w-40 -translate-y-6 rounded-full bg-indigo-500/30 blur-3xl" />
-            <div className="absolute -bottom-24 -left-12 h-40 w-40 translate-y-6 rounded-full bg-cyan-500/20 blur-3xl" />
-            <form className="mt-4 space-y-4" onSubmit={handleSubmit}>
-              <div className="space-y-4">
+          <div className="login-card relative w-full rounded-2xl border border-white/10 bg-white/60 p-6 shadow-xl backdrop-blur-md transition sm:p-8 dark:border-white/10 dark:bg-gray-900/60">
+            <div className="absolute -top-24 right-1/2 h-40 w-40 translate-x-1/2 -translate-y-1/2 rounded-full bg-indigo-500/20 blur-3xl sm:right-12 sm:-translate-y-6 sm:translate-x-0" />
+            <div className="absolute -bottom-24 left-1/2 h-40 w-40 -translate-x-1/2 translate-y-1/2 rounded-full bg-cyan-500/10 blur-3xl sm:-left-12 sm:translate-y-6 sm:translate-x-0" />
+            <form className="mt-4 space-y-6" onSubmit={handleSubmit}>
+              <div className="space-y-6">
                 <div>
                   <label htmlFor="username" className="sr-only">
                     {t('auth.username')}

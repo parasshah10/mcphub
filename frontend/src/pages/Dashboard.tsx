@@ -62,153 +62,171 @@ const [showGlobalEndpoints, setShowGlobalEndpoints] = useState(false);
       )}
 
       {!isLoading && (
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-5">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-5">
           {/* Total servers */}
-          <div className="bg-white rounded-lg shadow p-6 dashboard-card">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-5">
             <div className="flex items-center">
-              <div className="p-3 rounded-full bg-blue-100 text-blue-800 icon-container status-icon-blue">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="flex-shrink-0 p-3 rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900/50 dark:text-blue-300">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
                 </svg>
               </div>
               <div className="ml-4">
-                <h2 className="text-xl font-semibold text-gray-700">{t('pages.dashboard.totalServers')}</h2>
-                <p className="text-3xl font-bold text-gray-900">{serverStats.total}</p>
+                <h2 className="text-lg font-medium text-gray-500 dark:text-gray-400">{t('pages.dashboard.totalServers')}</h2>
+                <p className="text-3xl font-bold text-gray-900 dark:text-white">{serverStats.total}</p>
               </div>
             </div>
           </div>
 
           {/* Online servers */}
-          <div className="bg-white rounded-lg shadow p-6 dashboard-card">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-5">
             <div className="flex items-center">
-              <div className="p-3 rounded-full bg-green-100 text-green-800 icon-container status-icon-green">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="flex-shrink-0 p-3 rounded-full bg-green-100 text-green-600 dark:bg-green-900/50 dark:text-green-300">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
               <div className="ml-4">
-                <h2 className="text-xl font-semibold text-gray-700">{t('pages.dashboard.onlineServers')}</h2>
-                <p className="text-3xl font-bold text-gray-900">{serverStats.online}</p>
+                <h2 className="text-lg font-medium text-gray-500 dark:text-gray-400">{t('pages.dashboard.onlineServers')}</h2>
+                <p className="text-3xl font-bold text-gray-900 dark:text-white">{serverStats.online}</p>
               </div>
             </div>
           </div>
 
           {/* Offline servers */}
-          <div className="bg-white rounded-lg shadow p-6 dashboard-card">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-5">
             <div className="flex items-center">
-              <div className="p-3 rounded-full bg-red-100 text-red-800 icon-container status-icon-red">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="flex-shrink-0 p-3 rounded-full bg-red-100 text-red-600 dark:bg-red-900/50 dark:text-red-300">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
               <div className="ml-4">
-                <h2 className="text-xl font-semibold text-gray-700">{t('pages.dashboard.offlineServers')}</h2>
-                <p className="text-3xl font-bold text-gray-900">{serverStats.offline}</p>
+                <h2 className="text-lg font-medium text-gray-500 dark:text-gray-400">{t('pages.dashboard.offlineServers')}</h2>
+                <p className="text-3xl font-bold text-gray-900 dark:text-white">{serverStats.offline}</p>
               </div>
             </div>
           </div>
 
           {/* Connecting servers */}
-          <div className="bg-white rounded-lg shadow p-6 dashboard-card">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-5">
             <div className="flex items-center">
-              <div className="p-3 rounded-full bg-yellow-100 text-yellow-800 icon-container status-icon-yellow">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="flex-shrink-0 p-3 rounded-full bg-yellow-100 text-yellow-600 dark:bg-yellow-900/50 dark:text-yellow-300">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
               <div className="ml-4">
-                <h2 className="text-xl font-semibold text-gray-700">{t('pages.dashboard.connectingServers')}</h2>
-                <p className="text-3xl font-bold text-gray-900">{serverStats.connecting}</p>
+                <h2 className="text-lg font-medium text-gray-500 dark:text-gray-400">{t('pages.dashboard.connectingServers')}</h2>
+                <p className="text-3xl font-bold text-gray-900 dark:text-white">{serverStats.connecting}</p>
               </div>
             </div>
-
           </div>
           
           {/* Global API Endpoints */}
-          <div className="bg-white rounded-lg shadow p-6 dashboard-card">
-          <div className="flex items-center">
-          <div className="p-3 rounded-full bg-purple-100 text-purple-800 icon-container">
-          <Link size={24} />
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-5">
+            <div className="flex items-center">
+              <div className="flex-shrink-0 p-3 rounded-full bg-purple-100 text-purple-600 dark:bg-purple-900/50 dark:text-purple-300">
+                <Link size={28} />
+              </div>
+              <div className="ml-4">
+                <h2 className="text-lg font-medium text-gray-500 dark:text-gray-400">Global Endpoints</h2>
+                <button
+                  onClick={() => setShowGlobalEndpoints(true)}
+                  className="text-sm text-blue-600 hover:text-blue-800 mt-1 transition-colors"
+                >
+                  View URLs →
+                </button>
+              </div>
+            </div>
           </div>
-          <div className="ml-4">
-          <h2 className="text-xl font-semibold text-gray-700">Global Endpoints</h2>
-          <button
-          onClick={() => setShowGlobalEndpoints(true)}
-          className="text-sm text-blue-600 hover:text-blue-800 mt-1 transition-colors"
-          >
-          View URLs →
-          </button>
-          </div>
-          </div>
-          </div>
-          </div>
-          )}
+        </div>
+      )}
           
-          <EndpointsModal
-          isOpen={showGlobalEndpoints}
-          onClose={() => setShowGlobalEndpoints(false)}
-          type="global"
-          title="Global API Endpoints"
-          />
+      <EndpointsModal
+        isOpen={showGlobalEndpoints}
+        onClose={() => setShowGlobalEndpoints(false)}
+        type="global"
+        title="Global API Endpoints"
+      />
 
       {/* Recent activity list */}
       {servers.length > 0 && !isLoading && (
         <div className="mt-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">{t('pages.dashboard.recentServers')}</h2>
-          <div className="bg-white shadow rounded-lg overflow-hidden table-container">
-            <table className="min-w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">{t('pages.dashboard.recentServers')}</h2>
+
+          {/* Table for larger screens */}
+          <div className="hidden md:block bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead className="bg-gray-50 dark:bg-gray-700">
                 <tr>
-                  <th scope="col" className="px-6 py-5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {t('server.name')}
-                  </th>
-                  <th scope="col" className="px-6 py-5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {t('server.status')}
-                  </th>
-                  <th scope="col" className="px-6 py-5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {t('server.tools')}
-                  </th>
-                  <th scope="col" className="px-6 py-5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {t('server.prompts')}
-                  </th>
-                  <th scope="col" className="px-6 py-5 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {t('server.enabled')}
-                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">{t('server.name')}</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">{t('server.status')}</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">{t('server.tools')}</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">{t('server.prompts')}</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">{t('server.enabled')}</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                 {servers.slice(0, 5).map((server, index) => (
                   <tr key={index}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {server.name}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${server.status === 'connected'
-                        ? 'status-badge-online'
-                        : server.status === 'disconnected'
-                          ? 'status-badge-offline'
-                          : 'status-badge-connecting'
-                        }`}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{server.name}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                      <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                        server.status === 'connected' ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' :
+                        server.status === 'disconnected' ? 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300' :
+                        'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300'
+                      }`}>
                         {t(statusTranslations[server.status] || server.status)}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {server.tools?.length || 0}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {server.prompts?.length || 0}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{server.tools?.length || 0}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{server.prompts?.length || 0}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
                       {server.enabled !== false ? (
-                        <span className="text-green-600">✓</span>
+                        <span className="text-green-500">✓</span>
                       ) : (
-                        <span className="text-status-red">✗</span>
+                        <span className="text-red-500">✗</span>
                       )}
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+          </div>
+
+          {/* Cards for smaller screens */}
+          <div className="grid grid-cols-1 gap-4 md:hidden">
+            {servers.slice(0, 5).map((server, index) => (
+              <div key={index} className="bg-white dark:bg-gray-800 shadow rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white">{server.name}</h3>
+                  <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                    server.status === 'connected' ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' :
+                    server.status === 'disconnected' ? 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300' :
+                    'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300'
+                  }`}>
+                    {t(statusTranslations[server.status] || server.status)}
+                  </span>
+                </div>
+                <div className="mt-4 grid grid-cols-3 gap-4 text-sm text-gray-500 dark:text-gray-300">
+                  <div>
+                    <span className="font-medium">{t('server.tools')}:</span> {server.tools?.length || 0}
+                  </div>
+                  <div>
+                    <span className="font-medium">{t('server.prompts')}:</span> {server.prompts?.length || 0}
+                  </div>
+                  <div>
+                    <span className="font-medium">{t('server.enabled')}:</span>
+                    {server.enabled !== false ? (
+                      <span className="text-green-500 ml-1">✓</span>
+                    ) : (
+                      <span className="text-red-500 ml-1">✗</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}

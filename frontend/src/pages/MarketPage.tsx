@@ -377,58 +377,25 @@ const MarketPage: React.FC = () => {
         </div>
       )}
 
-      <div className="flex flex-col md:flex-row gap-6">
+      <div className="flex flex-col lg:flex-row gap-6">
         {/* Left sidebar for filters (local market only) */}
         {isLocalTab && (
-          <div className="md:w-48 flex-shrink-0">
-            <div className="bg-white shadow rounded-lg p-4 mb-6 sticky top-4 page-card">
+          <div className="lg:w-64 flex-shrink-0">
+            <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-4 sticky top-4">
               {/* Categories */}
-              {categories.length > 0 ? (
-                <div className="mb-6">
-                  <div className="flex justify-between items-center mb-3">
-                    <h3 className="font-medium text-gray-900">{t('market.categories')}</h3>
-                    {selectedCategory && (
-                      <span className="text-xs text-blue-600 cursor-pointer hover:underline transition-colors duration-200" onClick={() => filterLocalByCategory('')}>
-                        {t('market.clearCategoryFilter')}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex flex-col gap-2">
+              <div className="mb-6">
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-3">{t('market.categories')}</h3>
+                {loading ? (
+                  <div className="flex justify-center py-4"><svg className="animate-spin h-6 w-6 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg></div>
+                ) : categories.length > 0 ? (
+                  <div className="flex flex-wrap lg:flex-col gap-2">
+                    <button onClick={() => handleCategoryClick('')} className={`w-full px-3 py-2 rounded text-sm text-left transition-all duration-200 ${selectedCategory === '' ? 'bg-blue-100 text-blue-800 font-medium' : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>All</button>
                     {categories.map((category) => (
-                      <button
-                        key={category}
-                        onClick={() => handleCategoryClick(category)}
-                        className={`px-3 py-2 rounded text-sm text-left transition-all duration-200 ${selectedCategory === category
-                          ? 'bg-blue-100 text-blue-800 font-medium btn-primary'
-                          : 'bg-gray-100 text-gray-800 hover:bg-gray-200 btn-secondary'
-                          }`}
-                      >
-                        {category}
-                      </button>
+                      <button key={category} onClick={() => handleCategoryClick(category)} className={`w-full px-3 py-2 rounded text-sm text-left transition-all duration-200 ${selectedCategory === category ? 'bg-blue-100 text-blue-800 font-medium' : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'}`}>{category}</button>
                     ))}
                   </div>
-                </div>
-              ) : loading ? (
-                <div className="mb-6">
-                  <div className="mb-3">
-                    <h3 className="font-medium text-gray-900">{t('market.categories')}</h3>
-                  </div>
-                  <div className="flex flex-col gap-2 items-center py-4 loading-container">
-                    <svg className="animate-spin h-6 w-6 text-blue-500 mb-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    <p className="text-sm text-gray-600">{t('app.loading')}</p>
-                  </div>
-                </div>
-              ) : (
-                <div className="mb-6">
-                  <div className="mb-3">
-                    <h3 className="font-medium text-gray-900">{t('market.categories')}</h3>
-                  </div>
-                  <p className="text-sm text-gray-600 py-2">{t('market.noCategories')}</p>
-                </div>
-              )}
+                ) : <p className="text-sm text-gray-600 dark:text-gray-400 py-2">{t('market.noCategories')}</p>}
+              </div>
             </div>
           </div>
         )}
@@ -436,79 +403,39 @@ const MarketPage: React.FC = () => {
         {/* Main content area */}
         <div className="flex-grow">
           {loading ? (
-            <div className="bg-white shadow rounded-lg p-6 flex items-center justify-center">
-              <div className="flex flex-col items-center">
-                <svg className="animate-spin h-10 w-10 text-blue-500 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <p className="text-gray-600">{t('app.loading')}</p>
-              </div>
-            </div>
+            <div className="flex justify-center items-center h-64"><svg className="animate-spin h-10 w-10 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg></div>
           ) : servers.length === 0 ? (
-            <div className="bg-white shadow rounded-lg p-6">
-              <p className="text-gray-600">{isLocalTab ? t('market.noServers') : t('cloud.noServers')}</p>
-            </div>
+            <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 text-center"><p className="text-gray-600 dark:text-gray-400">{isLocalTab ? t('market.noServers') : t('cloud.noServers')}</p></div>
           ) : (
             <>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
                 {servers.map((server, index) => (
                   isLocalTab ? (
-                    <MarketServerCard
-                      key={index}
-                      server={server as MarketServer}
-                      onClick={handleServerClick}
-                    />
+                    <MarketServerCard key={index} server={server as MarketServer} onClick={handleServerClick} />
                   ) : (
-                    <CloudServerCard
-                      key={index}
-                      server={server as CloudServer}
-                      onClick={handleServerClick}
-                    />
+                    <CloudServerCard key={index} server={server as CloudServer} onClick={handleServerClick} />
                   )
                 ))}
               </div>
 
-              <div className="flex justify-between items-center mb-4">
-                <div className="text-sm text-gray-500">
-                  {isLocalTab ? (
-                    t('market.showing', {
-                      from: (currentPage - 1) * serversPerPage + 1,
-                      to: Math.min(currentPage * serversPerPage, allServers.length),
-                      total: allServers.length
-                    })
-                  ) : (
-                    t('cloud.showing', {
-                      from: (currentPage - 1) * serversPerPage + 1,
-                      to: Math.min(currentPage * serversPerPage, allServers.length),
-                      total: allServers.length
-                    })
-                  )}
+              <div className="mt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
+                <div className="text-sm text-gray-500 dark:text-gray-400">
+                  {t(isLocalTab ? 'market.showing' : 'cloud.showing', {
+                    from: (currentPage - 1) * serversPerPage + 1,
+                    to: Math.min(currentPage * serversPerPage, allServers.length),
+                    total: allServers.length
+                  })}
                 </div>
-                <Pagination
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  onPageChange={handlePageChange}
-                />
+                <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
                 <div className="flex items-center space-x-2">
-                  <label htmlFor="perPage" className="text-sm text-gray-600">
-                    {isLocalTab ? t('market.perPage') : t('cloud.perPage')}:
-                  </label>
-                  <select
-                    id="perPage"
-                    value={serversPerPage}
-                    onChange={handleChangeItemsPerPage}
-                    className="border rounded p-1 text-sm btn-secondary outline-none"
-                  >
+                  <label htmlFor="perPage" className="text-sm text-gray-600 dark:text-gray-300">{t(isLocalTab ? 'market.perPage' : 'cloud.perPage')}:</label>
+                  <select id="perPage" value={serversPerPage} onChange={handleChangeItemsPerPage} className="border rounded p-1 text-sm bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 outline-none">
                     <option value="6">6</option>
                     <option value="9">9</option>
                     <option value="12">12</option>
                     <option value="24">24</option>
                   </select>
                 </div>
-              </div>
-
-              <div className="mt-6">
               </div>
             </>
           )}

@@ -242,54 +242,51 @@ const ServerCard = ({ server, onRemove, onEdit, onClone, onToggle, onRefresh }: 
               </div>
             )}
           </div>
-          <div className="flex space-x-2">
-          <button
-          onClick={handleClone}
-          className="p-2 bg-gray-100 text-gray-600 rounded hover:bg-gray-200 btn-secondary"
-          title={t('server.clone') || 'Clone'}
-          >
-          <Copy size={14} />
-          </button>
-          <button
-          onClick={handleShowEndpoints}
-          className="p-2 bg-gray-100 text-gray-600 rounded hover:bg-gray-200 btn-secondary"
-          title="API Endpoints"
-          >
-          <Link size={14} />
-          </button>
-          <button
-          onClick={handleEdit}
-          className="px-3 py-1 bg-blue-100 text-blue-800 rounded hover:bg-blue-200 text-sm btn-primary"
-          >
-          {t('server.edit')}
-          </button>
+          <div className="flex items-center space-x-2">
             <div className="flex items-center">
               <button
                 onClick={handleToggle}
-                className={`px-3 py-1 text-sm rounded transition-colors ${isToggling
-                  ? 'bg-gray-200 text-gray-500'
-                  : server.enabled !== false
-                    ? 'bg-green-100 text-green-800 hover:bg-green-200 btn-secondary'
-                    : 'bg-gray-100 text-gray-800 hover:bg-gray-200 btn-primary'
-                  }`}
+                className={`px-3 py-1 text-sm rounded transition-colors ${
+                  isToggling
+                    ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                    : server.enabled !== false
+                    ? 'bg-green-100 text-green-800 hover:bg-green-200'
+                    : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                }`}
                 disabled={isToggling}
               >
-                {isToggling
-                  ? t('common.processing')
-                  : server.enabled !== false
-                    ? t('server.disable')
-                    : t('server.enable')
-                }
+                {isToggling ? t('common.processing') : server.enabled !== false ? t('server.disable') : t('server.enable')}
               </button>
             </div>
-            <button
-              onClick={handleRemove}
-              className="px-3 py-1 bg-red-100 text-red-800 rounded hover:bg-red-200 text-sm btn-danger"
-            >
-              {t('server.delete')}
-            </button>
-            <button className="text-gray-400 hover:text-gray-600 btn-secondary">
-              {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+
+            {/* Actions Dropdown */}
+            <div className="relative inline-block text-left">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  // Simple toggle, for more complex state use a state variable
+                  const menu = e.currentTarget.nextElementSibling as HTMLElement;
+                  if (menu) menu.classList.toggle('hidden');
+                }}
+                className="p-2 bg-gray-100 text-gray-600 rounded hover:bg-gray-200"
+                title="More actions"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                </svg>
+              </button>
+              <div className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none hidden z-10">
+                <div className="py-1" role="menu" aria-orientation="vertical" aria-labelledby="options-menu">
+                  <a href="#" onClick={handleEdit} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem">{t('server.edit')}</a>
+                  <a href="#" onClick={handleClone} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem">{t('server.clone')}</a>
+                  <a href="#" onClick={handleShowEndpoints} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" role="menuitem">API Endpoints</a>
+                  <a href="#" onClick={handleRemove} className="block px-4 py-2 text-sm text-red-700 hover:bg-red-50" role="menuitem">{t('server.delete')}</a>
+                </div>
+              </div>
+            </div>
+
+            <button onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }} className="text-gray-400 hover:text-gray-600">
+              {isExpanded ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
             </button>
           </div>
         </div>

@@ -38,7 +38,7 @@
   "users": [
     {
       "username": "admin",
-      "password": "$2b$10$Vt7krIvjNgyN67LXqly0uOcTpN0LI55cYRbcKC71pUDAP0nJ7RPa.",
+      "password": "$2b$12$jKhzSFyGMpnZv3EWDizQ4.vNMKn1VFi2ewN4wZUK.wxpNx7TIR4HO",
       "isAdmin": true
     }
   ]

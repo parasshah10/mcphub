@@ -70,7 +70,7 @@ const CloudServerCard: React.FC<CloudServerCardProps> = ({ server, onClick }) =>
       <div className="relative z-10 flex-1 flex flex-col">
         <div className="flex items-start justify-between mb-3">
           <div className="flex-1">
-            <h3 className="text-lg font-bold text-gray-900 group-hover:text-blue-600 transition-colors duration-200 mb-2 line-clamp-2">
+            <h3 className="text-base sm:text-lg font-bold text-gray-900 group-hover:text-blue-600 transition-colors duration-200 mb-2 line-clamp-2">
               {server.title || server.name}
             </h3>
 

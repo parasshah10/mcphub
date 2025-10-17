@@ -100,12 +100,12 @@ const MarketServerCard: React.FC<MarketServerCardProps> = ({ server, onClick }) 
       <div className="relative z-10 flex-1 flex flex-col">
         <div className="flex items-start justify-between mb-2">
           <div className="flex-1">
-            <h3 className="text-lg font-bold text-gray-900 group-hover:text-blue-600 transition-colors duration-200 mb-1 line-clamp-1 mr-2">
+            <h3 className="text-base sm:text-lg font-bold text-gray-900 group-hover:text-blue-600 transition-colors duration-200 mb-1 line-clamp-1 mr-2">
               {server.display_name}
             </h3>
 
             {/* Author Section */}
-            <div className="flex items-center space-x-2 mb-1">
+            <div className="flex items-center space-x-2 mb-2">
               <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-xs font-semibold">
                 {getAuthorInitials(server.author?.name || t('market.unknown'))}
               </div>

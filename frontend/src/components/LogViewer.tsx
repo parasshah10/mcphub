@@ -67,21 +67,44 @@ const LogViewer: React.FC<LogViewerProps> = ({ logs, isLoading = false, error = 
 
   return (
     <div className="flex flex-col h-full">
-      <div className="bg-card p-3 rounded-t-md flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="font-semibold text-sm">{t('logs.filters')}:</span>
+      <div className="bg-card p-3 rounded-t-md">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-semibold text-sm">{t('logs.filters')}:</span>
+            <input
+              type="text"
+              placeholder={t('logs.search')}
+              className="shadow-sm appearance-none border border-gray-200 rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 form-input w-full sm:w-auto"
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="flex items-center gap-1 text-sm">
+              <input
+                type="checkbox"
+                checked={autoScroll}
+                onChange={() => setAutoScroll(!autoScroll)}
+                className="form-checkbox h-4 w-4"
+              />
+              {t('logs.autoScroll')}
+            </label>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onClear}
+              className='btn-secondary'
+              disabled={isLoading || logs.length === 0}
+            >
+              {t('logs.clearLogs')}
+            </Button>
+          </div>
+        </div>
 
-          {/* Text search filter */}
-          <input
-            type="text"
-            placeholder={t('logs.search')}
-            className="shadow appearance-none border border-gray-200 rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline form-input"
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-          />
-
+        <div className="flex flex-wrap items-center gap-4 mt-3">
           {/* Log type filters */}
-          <div className="flex gap-1 items-center">
+          <div className="flex gap-2 items-center">
+            <span className="text-sm font-medium">{t('logs.type')}:</span>
             {(['debug', 'info', 'error', 'warn'] as const).map(type => (
               <Badge
                 key={type}

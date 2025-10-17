@@ -181,31 +181,30 @@ const GroupCard = ({
             <p className="text-gray-600 text-sm mt-1">{group.description}</p>
           )}
         </div>
-        <div className="flex items-center space-x-3">
-        <div className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-sm btn-secondary">
-        {t('groups.serverCount', { count: group.servers.length })}
-        </div>
-        <button
-        onClick={() => setShowEndpointsModal(true)}
-        className="text-gray-500 hover:text-gray-700"
-        title="API Endpoints"
-        >
-        <Link size={18} />
-        </button>
-        <button
-        onClick={handleEdit}
-        className="text-gray-500 hover:text-gray-700"
-        title={t('groups.edit')}
-        >
-        <Edit size={18} />
-        </button>
-        <button
-        onClick={handleDelete}
-        className="text-gray-500 hover:text-red-600"
-        title={t('groups.delete')}
-        >
-        <Trash size={18} />
-        </button>
+        <div className="flex items-center space-x-2">
+          <div className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-sm">
+            {t('groups.serverCount', { count: group.servers.length })}
+          </div>
+          <div className="relative inline-block text-left">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                const menu = e.currentTarget.nextElementSibling as HTMLElement;
+                if (menu) menu.classList.toggle('hidden');
+              }}
+              className="p-2 text-gray-500 rounded hover:bg-gray-100"
+              title="More actions"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" /></svg>
+            </button>
+            <div className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none hidden z-10">
+              <div className="py-1">
+                <a href="#" onClick={handleEdit} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">{t('groups.edit')}</a>
+                <a href="#" onClick={() => setShowEndpointsModal(true)} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">API Endpoints</a>
+                <a href="#" onClick={handleDelete} className="block px-4 py-2 text-sm text-red-700 hover:bg-red-50">{t('groups.delete')}</a>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 

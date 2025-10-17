@@ -64,11 +64,49 @@ jest.mock('@modelcontextprotocol/sdk/server/streamableHttp.js', () => ({
 }));
 
 jest.mock('@modelcontextprotocol/sdk/types.js', () => ({
-  isInitializeRequest: jest.fn(() => true),
+  isInitializeRequest: jest.fn(),
+}));
+
+const mockStreamableTransportInstance = {
+  sessionId: 'test-session-id',
+  connect: jest.fn(),
+  handleRequest: jest.fn(),
+  onclose: null,
+};
+
+jest.mock('@modelcontextprotocol/sdk/server/streamableHttp.js', () => ({
+  StreamableHTTPServerTransport: jest.fn().mockImplementation((options) => {
+    // This is the constructor.
+    // The handleRequest on the instance will be called later.
+    // We need to simulate the instance's behavior based on the options.
+    const instance = {
+      ...mockStreamableTransportInstance,
+      handleRequest: jest.fn(async (req, res) => {
+        // This simulates the behavior of a NEWLY created transport instance.
+        if (isInitializeRequest(req.body)) {
+          if (options && options.onsessioninitialized) {
+            // Simulate the SDK initializing a session and calling our callback
+            options.onsessioninitialized('test-session-id');
+          }
+          // A real transport would send back the initialize response. We can omit for this test.
+        } else {
+          // A real transport would throw an error if it gets a non-init request
+          // when it hasn't been initialized.
+          res.status(400).json({
+            jsonrpc: '2.0',
+            error: { code: -32000, message: 'Bad Request: No valid session ID provided' },
+            id: null,
+          });
+        }
+      }),
+    };
+    return instance;
+  }),
 }));
 
 // Import mocked modules
 import { getMcpServer } from './mcpService.js';
+import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js';
 import { loadSettings } from '../config/index.js';
 import { UserContextService } from './userContextService.js';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
@@ -371,6 +409,7 @@ describe('sseService', () => {
     });
 
     it('should create new transport for initialize request without sessionId', async () => {
+      (isInitializeRequest as jest.Mock).mockReturnValue(true);
       const req = createMockRequest({
         params: { group: 'test-group' },
         body: { method: 'initialize' },
@@ -379,20 +418,23 @@ describe('sseService', () => {
 
       await handleMcpPostRequest(req, res);
 
+      // Verify a new transport was created and the session was initialized
       expect(StreamableHTTPServerTransport).toHaveBeenCalled();
-      expect(getMcpServer).toHaveBeenCalled();
+      expect(getMcpServer).toHaveBeenCalledWith('test-session-id', 'test-group');
     });
 
     it('should return error for invalid session', async () => {
+      (isInitializeRequest as jest.Mock).mockReturnValue(false);
       const req = createMockRequest({
         params: { group: 'test-group' },
-        headers: { 'mcp-session-id': 'invalid-session' },
+        // No mcp-session-id header, and it's not an initialize request
         body: { method: 'someMethod' },
       });
       const res = createMockResponse();
 
       await handleMcpPostRequest(req, res);
 
+      // It should be handled by the mock's fallback logic
       expect(res.status).toHaveBeenCalledWith(400);
       expect(res.json).toHaveBeenCalledWith({
         jsonrpc: '2.0',

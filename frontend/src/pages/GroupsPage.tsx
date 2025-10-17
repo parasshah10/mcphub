@@ -49,9 +49,9 @@ const GroupsPage: React.FC = () => {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">{t('pages.groups.title')}</h1>
-        <div className="flex space-x-4">
+      <div className="flex flex-wrap justify-between items-center mb-8 gap-4">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('pages.groups.title')}</h1>
+        <div className="flex items-center">
           <button
             onClick={handleAddGroup}
             className="px-4 py-2 bg-blue-100 text-blue-800 rounded hover:bg-blue-200 flex items-center btn-primary transition-all duration-200"
