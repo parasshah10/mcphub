@@ -1,176 +1,237 @@
-import { useState, useRef, useEffect } from 'react'
-import { useTranslation } from 'react-i18next'
-import { Server } from '@/types'
-import { ChevronDown, ChevronRight, AlertCircle, Copy, Check, Link } from 'lucide-react'
-import { StatusBadge } from '@/components/ui/Badge'
-import ToolCard from '@/components/ui/ToolCard'
-import PromptCard from '@/components/ui/PromptCard'
-import DeleteDialog from '@/components/ui/DeleteDialog'
-import EndpointsModal from '@/components/EndpointsModal'
-import { useToast } from '@/contexts/ToastContext'
+import { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Server } from '@/types';
+import { ChevronDown, ChevronRight, AlertCircle, Copy, Check, Link } from 'lucide-react';
+import { StatusBadge } from '@/components/ui/Badge';
+import ToolCard from '@/components/ui/ToolCard';
+import PromptCard from '@/components/ui/PromptCard';
+import DeleteDialog from '@/components/ui/DeleteDialog';
+import EndpointsModal from '@/components/EndpointsModal';
+import { useToast } from '@/contexts/ToastContext';
+import { useSettingsData } from '@/hooks/useSettingsData';
 
 interface ServerCardProps {
-  server: Server
-  onRemove: (serverName: string) => void
-  onEdit: (server: Server) => void
-  onClone: (server: Server) => void
-  onToggle?: (server: Server, enabled: boolean) => Promise<boolean>
-  onRefresh?: () => void
+  server: Server;
+  onRemove: (serverName: string) => void;
+  onEdit: (server: Server) => void;
+  onClone: (server: Server) => void;
+  onToggle?: (server: Server, enabled: boolean) => Promise<boolean>;
+  onRefresh?: () => void;
 }
 
 const ServerCard = ({ server, onRemove, onEdit, onClone, onToggle, onRefresh }: ServerCardProps) => {
-  const { t } = useTranslation()
-  const { showToast } = useToast()
-  const [isExpanded, setIsExpanded] = useState(false)
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
-  const [isToggling, setIsToggling] = useState(false)
-  const [showErrorPopover, setShowErrorPopover] = useState(false)
-  const [copied, setCopied] = useState(false)
-  const [showEndpointsModal, setShowEndpointsModal] = useState(false)
-  const [showActionsMenu, setShowActionsMenu] = useState(false)
-  const errorPopoverRef = useRef<HTMLDivElement>(null)
-  const actionsMenuRef = useRef<HTMLDivElement>(null)
+  const { t } = useTranslation();
+  const { showToast } = useToast();
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isToggling, setIsToggling] = useState(false);
+  const [showErrorPopover, setShowErrorPopover] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [showEndpointsModal, setShowEndpointsModal] = useState(false);
+  const [showActionsMenu, setShowActionsMenu] = useState(false);
+  const errorPopoverRef = useRef<HTMLDivElement>(null);
+  const actionsMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (errorPopoverRef.current && !errorPopoverRef.current.contains(event.target as Node)) {
-        setShowErrorPopover(false)
+        setShowErrorPopover(false);
       }
       if (actionsMenuRef.current && !actionsMenuRef.current.contains(event.target as Node)) {
-        setShowActionsMenu(false)
+        setShowActionsMenu(false);
       }
-    }
+    };
 
-    document.addEventListener('mousedown', handleClickOutside)
+    document.addEventListener('mousedown', handleClickOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [])
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const { exportMCPSettings } = useSettingsData();
 
   const handleRemove = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    setShowDeleteDialog(true)
-    setShowActionsMenu(false)
-  }
+    e.stopPropagation();
+    setShowDeleteDialog(true);
+    setShowActionsMenu(false);
+  };
 
   const handleEdit = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    onEdit(server)
-    setShowActionsMenu(false)
-  }
+    e.stopPropagation();
+    onEdit(server);
+    setShowActionsMenu(false);
+  };
 
   const handleClone = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    onClone(server)
-    setShowActionsMenu(false)
-  }
-  
+    e.stopPropagation();
+    onClone(server);
+    setShowActionsMenu(false);
+  };
+
   const handleShowEndpoints = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    setShowEndpointsModal(true)
-    setShowActionsMenu(false)
-  }
+    e.stopPropagation();
+    setShowEndpointsModal(true);
+    setShowActionsMenu(false);
+  };
 
   const handleToggle = async (e: React.MouseEvent) => {
-    e.stopPropagation()
-    if (isToggling || !onToggle) return
+    e.stopPropagation();
+    if (isToggling || !onToggle) return;
 
-    setIsToggling(true)
+    setIsToggling(true);
     try {
-      await onToggle(server, !(server.enabled !== false))
+      await onToggle(server, !(server.enabled !== false));
     } finally {
-      setIsToggling(false)
+      setIsToggling(false);
     }
-  }
+  };
 
   const handleErrorIconClick = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    setShowErrorPopover(!showErrorPopover)
-  }
+    e.stopPropagation();
+    setShowErrorPopover(!showErrorPopover);
+  };
 
   const copyToClipboard = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    if (!server.error) return
+    e.stopPropagation();
+    if (!server.error) return;
 
     if (navigator.clipboard && window.isSecureContext) {
       navigator.clipboard.writeText(server.error).then(() => {
-        setCopied(true)
-        showToast(t('common.copySuccess') || 'Copied to clipboard', 'success')
-        setTimeout(() => setCopied(false), 2000)
-      })
+        setCopied(true);
+        showToast(t('common.copySuccess') || 'Copied to clipboard', 'success');
+        setTimeout(() => setCopied(false), 2000);
+      });
     } else {
-      const textArea = document.createElement('textarea')
-      textArea.value = server.error
-      textArea.style.position = 'fixed'
-      textArea.style.left = '-9999px'
-      document.body.appendChild(textArea)
-      textArea.focus()
-      textArea.select()
+      // Fallback for HTTP or unsupported clipboard API
+      const textArea = document.createElement('textarea');
+      textArea.value = server.error;
+      // Avoid scrolling to bottom
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-9999px';
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
       try {
-        document.execCommand('copy')
-        setCopied(true)
-        showToast(t('common.copySuccess') || 'Copied to clipboard', 'success')
-        setTimeout(() => setCopied(false), 2000)
+        document.execCommand('copy');
+        setCopied(true);
+        showToast(t('common.copySuccess') || 'Copied to clipboard', 'success');
+        setTimeout(() => setCopied(false), 2000);
       } catch (err) {
-        showToast(t('common.copyFailed') || 'Copy failed', 'error')
-        console.error('Copy to clipboard failed:', err)
+        showToast(t('common.copyFailed') || 'Copy failed', 'error');
+        console.error('Copy to clipboard failed:', err);
       }
-      document.body.removeChild(textArea)
+      document.body.removeChild(textArea);
     }
-  }
+  };
+
+  const handleCopyServerConfig = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      const result = await exportMCPSettings(server.name);
+      const configJson = JSON.stringify(result.data, null, 2);
+
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(configJson);
+        showToast(t('common.copySuccess') || 'Copied to clipboard', 'success');
+      } else {
+        // Fallback for HTTP or unsupported clipboard API
+        const textArea = document.createElement('textarea');
+        textArea.value = configJson;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-9999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        try {
+          document.execCommand('copy');
+          showToast(t('common.copySuccess') || 'Copied to clipboard', 'success');
+        } catch (err) {
+          showToast(t('common.copyFailed') || 'Copy failed', 'error');
+          console.error('Copy to clipboard failed:', err);
+        }
+        document.body.removeChild(textArea);
+      }
+    } catch (error) {
+      console.error('Error copying server configuration:', error);
+      showToast(t('common.copyFailed') || 'Copy failed', 'error');
+    }
+  };
 
   const handleConfirmDelete = () => {
-    onRemove(server.name)
-    setShowDeleteDialog(false)
-  }
+    onRemove(server.name);
+    setShowDeleteDialog(false);
+  };
 
   const handleToolToggle = async (toolName: string, enabled: boolean) => {
     try {
-      const { toggleTool } = await import('@/services/toolService')
-      const result = await toggleTool(server.name, toolName, enabled)
+      const { toggleTool } = await import('@/services/toolService');
+      const result = await toggleTool(server.name, toolName, enabled);
       if (result.success) {
         showToast(
           t(enabled ? 'tool.enableSuccess' : 'tool.disableSuccess', { name: toolName }),
-          'success'
-        )
+          'success',
+        );
+        // Trigger refresh to update the tool's state in the UI
         if (onRefresh) {
-          onRefresh()
+          onRefresh();
         }
       } else {
-        showToast(result.error || t('tool.toggleFailed'), 'error')
+        showToast(result.error || t('tool.toggleFailed'), 'error');
       }
     } catch (error) {
-      console.error('Error toggling tool:', error)
-      showToast(t('tool.toggleFailed'), 'error')
+      console.error('Error toggling tool:', error);
+      showToast(t('tool.toggleFailed'), 'error');
     }
-  }
+  };
 
   const handlePromptToggle = async (promptName: string, enabled: boolean) => {
     try {
-      const { togglePrompt } = await import('@/services/promptService')
-      const result = await togglePrompt(server.name, promptName, enabled)
+      const { togglePrompt } = await import('@/services/promptService');
+      const result = await togglePrompt(server.name, promptName, enabled);
       if (result.success) {
         showToast(
           t(enabled ? 'tool.enableSuccess' : 'tool.disableSuccess', { name: promptName }),
-          'success'
-        )
+          'success',
+        );
+        // Trigger refresh to update the prompt's state in the UI
         if (onRefresh) {
-          onRefresh()
+          onRefresh();
         }
       } else {
-        showToast(result.error || t('tool.toggleFailed'), 'error')
+        showToast(result.error || t('tool.toggleFailed'), 'error');
       }
     } catch (error) {
-      console.error('Error toggling prompt:', error)
-      showToast(t('tool.toggleFailed'), 'error')
+      console.error('Error toggling prompt:', error);
+      showToast(t('tool.toggleFailed'), 'error');
     }
-  }
+  };
+
+  const handleOAuthAuthorization = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    // Open the OAuth authorization URL in a new window
+    if (server.oauth?.authorizationUrl) {
+      const width = 600;
+      const height = 700;
+      const left = window.screen.width / 2 - width / 2;
+      const top = window.screen.height / 2 - height / 2;
+
+      window.open(
+        server.oauth.authorizationUrl,
+        'OAuth Authorization',
+        `width=${width},height=${height},left=${left},top=${top}`,
+      );
+
+      showToast(t('status.oauthWindowOpened'), 'info');
+    }
+  };
 
   return (
     <>
-      <div className={`bg-white dark:bg-gray-800 shadow rounded-lg p-3 sm:p-6 mb-4 sm:mb-6 page-card transition-all duration-200 ${
-        server.enabled === false ? 'opacity-60' : ''
-      }`}>
+      <div
+        className={`bg-white dark:bg-gray-800 shadow rounded-lg p-3 sm:p-6 mb-4 sm:mb-6 page-card transition-all duration-200 ${
+          server.enabled === false ? 'opacity-60' : ''
+        }`}
+      >
         {/* Card header - responsive layout */}
         <div className="space-y-3">
           {/* Top row: Name and status */}
@@ -179,12 +240,16 @@ const ServerCard = ({ server, onRemove, onEdit, onClone, onToggle, onRefresh }: 
             onClick={() => setIsExpanded(!isExpanded)}
           >
             <div className="flex items-start space-x-2 sm:space-x-3 flex-1 min-w-0">
-              <h2 className={`text-base sm:text-xl font-semibold break-words ${
-                server.enabled === false ? 'text-gray-600 dark:text-gray-400' : 'text-gray-900 dark:text-white'
-              }`}>
+              <h2
+                className={`text-base sm:text-xl font-semibold break-words ${
+                  server.enabled === false
+                    ? 'text-gray-600 dark:text-gray-400'
+                    : 'text-gray-900 dark:text-white'
+                }`}
+              >
                 {server.name}
               </h2>
-              <StatusBadge status={server.status} />
+              <StatusBadge status={server.status} onAuthClick={handleOAuthAuthorization} />
               {server.error && (
                 <div className="relative flex-shrink-0">
                   <div
@@ -219,8 +284,8 @@ const ServerCard = ({ server, onRemove, onEdit, onClone, onToggle, onRefresh }: 
                         </div>
                         <button
                           onClick={(e) => {
-                            e.stopPropagation()
-                            setShowErrorPopover(false)
+                            e.stopPropagation();
+                            setShowErrorPopover(false);
                           }}
                           className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
                         >
@@ -246,9 +311,15 @@ const ServerCard = ({ server, onRemove, onEdit, onClone, onToggle, onRefresh }: 
           <div className="flex flex-wrap gap-2 text-xs sm:text-sm">
             <div className="flex items-center px-2 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-full btn-primary">
               <svg className="w-3 h-3 sm:w-4 sm:h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clipRule="evenodd" />
+                <path
+                  fillRule="evenodd"
+                  d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z"
+                  clipRule="evenodd"
+                />
               </svg>
-              <span>{server.tools?.length || 0} {t('server.tools')}</span>
+              <span>
+                {server.tools?.length || 0} {t('server.tools')}
+              </span>
             </div>
 
             <div className="flex items-center px-2 py-1 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 rounded-full btn-primary">
@@ -256,7 +327,9 @@ const ServerCard = ({ server, onRemove, onEdit, onClone, onToggle, onRefresh }: 
                 <path d="M2 5a2 2 0 012-2h7a2 2 0 012 2v4a2 2 0 01-2 2H9l-3 3v-3H4a2 2 0 01-2-2V5z" />
                 <path d="M15 7v2a4 4 0 01-4 4H9.828l-1.766 1.767c.28.149.599.233.938.233h2l3 3v-3h2a2 2 0 002-2V9a2 2 0 00-2-2h-1z" />
               </svg>
-              <span>{server.prompts?.length || 0} {t('server.prompts')}</span>
+              <span>
+                {server.prompts?.length || 0} {t('server.prompts')}
+              </span>
             </div>
           </div>
 
@@ -264,6 +337,12 @@ const ServerCard = ({ server, onRemove, onEdit, onClone, onToggle, onRefresh }: 
           <div className="flex flex-wrap gap-2">
             {/* Desktop actions */}
             <div className="hidden sm:flex flex-wrap gap-2 flex-1">
+              <button
+                onClick={handleCopyServerConfig}
+                className="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-sm btn-secondary"
+              >
+                {t('server.copy')}
+              </button>
               <button
                 onClick={handleClone}
                 className="p-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 btn-secondary"
@@ -290,17 +369,16 @@ const ServerCard = ({ server, onRemove, onEdit, onClone, onToggle, onRefresh }: 
                   isToggling
                     ? 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
                     : server.enabled !== false
-                    ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-800/40 btn-secondary'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 btn-primary'
+                      ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-800/40 btn-secondary'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 btn-primary'
                 }`}
                 disabled={isToggling}
               >
                 {isToggling
                   ? t('common.processing')
                   : server.enabled !== false
-                  ? t('server.disable')
-                  : t('server.enable')
-                }
+                    ? t('server.disable')
+                    : t('server.enable')}
               </button>
               <button
                 onClick={handleRemove}
@@ -318,24 +396,23 @@ const ServerCard = ({ server, onRemove, onEdit, onClone, onToggle, onRefresh }: 
                   isToggling
                     ? 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
                     : server.enabled !== false
-                    ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400 btn-secondary'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300 btn-primary'
+                      ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400 btn-secondary'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300 btn-primary'
                 }`}
                 disabled={isToggling}
               >
                 {isToggling
                   ? t('common.processing')
                   : server.enabled !== false
-                  ? t('server.disable')
-                  : t('server.enable')
-                }
+                    ? t('server.disable')
+                    : t('server.enable')}
               </button>
-              
+
               <div className="relative" ref={actionsMenuRef}>
                 <button
                   onClick={(e) => {
-                    e.stopPropagation()
-                    setShowActionsMenu(!showActionsMenu)
+                    e.stopPropagation();
+                    setShowActionsMenu(!showActionsMenu);
                   }}
                   className="px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-sm btn-secondary"
                 >
@@ -349,6 +426,12 @@ const ServerCard = ({ server, onRemove, onEdit, onClone, onToggle, onRefresh }: 
                       className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
                     >
                       {t('server.edit')}
+                    </button>
+                    <button
+                      onClick={handleCopyServerConfig}
+                      className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
+                    >
+                      {t('server.copy')}
                     </button>
                     <button
                       onClick={handleClone}
@@ -382,9 +465,13 @@ const ServerCard = ({ server, onRemove, onEdit, onClone, onToggle, onRefresh }: 
           <div className="mt-4 space-y-4">
             {server.tools && server.tools.length > 0 && (
               <div>
-                <h6 className={`font-medium mb-3 text-sm sm:text-base ${
-                  server.enabled === false ? 'text-gray-600 dark:text-gray-400' : 'text-gray-900 dark:text-white'
-                }`}>
+                <h6
+                  className={`font-medium mb-3 text-sm sm:text-base ${
+                    server.enabled === false
+                      ? 'text-gray-600 dark:text-gray-400'
+                      : 'text-gray-900 dark:text-white'
+                  }`}
+                >
                   {t('server.tools')}
                 </h6>
                 <div className="space-y-3 sm:space-y-4">
@@ -397,18 +484,22 @@ const ServerCard = ({ server, onRemove, onEdit, onClone, onToggle, onRefresh }: 
 
             {server.prompts && server.prompts.length > 0 && (
               <div>
-                <h6 className={`font-medium mb-3 text-sm sm:text-base ${
-                  server.enabled === false ? 'text-gray-600 dark:text-gray-400' : 'text-gray-900 dark:text-white'
-                }`}>
+                <h6
+                  className={`font-medium mb-3 text-sm sm:text-base ${
+                    server.enabled === false
+                      ? 'text-gray-600 dark:text-gray-400'
+                      : 'text-gray-900 dark:text-white'
+                  }`}
+                >
                   {t('server.prompts')}
                 </h6>
                 <div className="space-y-3 sm:space-y-4">
                   {server.prompts.map((prompt, index) => (
-                    <PromptCard 
-                      key={index} 
-                      server={server.name} 
-                      prompt={prompt} 
-                      onToggle={handlePromptToggle} 
+                    <PromptCard
+                      key={index}
+                      server={server.name}
+                      prompt={prompt}
+                      onToggle={handlePromptToggle}
                     />
                   ))}
                 </div>
@@ -424,7 +515,7 @@ const ServerCard = ({ server, onRemove, onEdit, onClone, onToggle, onRefresh }: 
         onConfirm={handleConfirmDelete}
         serverName={server.name}
       />
-      
+
       <EndpointsModal
         isOpen={showEndpointsModal}
         onClose={() => setShowEndpointsModal(false)}
@@ -432,7 +523,7 @@ const ServerCard = ({ server, onRemove, onEdit, onClone, onToggle, onRefresh }: 
         name={server.name}
       />
     </>
-  )
-}
+  );
+};
 
-export default ServerCard
+export default ServerCard;

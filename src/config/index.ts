@@ -33,7 +33,17 @@ export const loadOriginalSettings = (): McpSettings => {
   }
 
   const settingsPath = getSettingsPath();
+  // check if file exists
+  if (!fs.existsSync(settingsPath)) {
+    console.warn(`Settings file not found at ${settingsPath}, using default settings.`);
+    const defaultSettings = { mcpServers: {}, users: [] };
+    // Cache default settings
+    settingsCache = defaultSettings;
+    return defaultSettings;
+  }
+
   try {
+    // Read and parse settings file
     const settingsData = fs.readFileSync(settingsPath, 'utf8');
     const settings = JSON.parse(settingsData);
 
@@ -43,13 +53,7 @@ export const loadOriginalSettings = (): McpSettings => {
     console.log(`Loaded settings from ${settingsPath}`);
     return settings;
   } catch (error) {
-    console.error(`Failed to load settings from ${settingsPath}:`, error);
-    const defaultSettings = { mcpServers: {}, users: [] };
-
-    // Cache default settings
-    settingsCache = defaultSettings;
-
-    return defaultSettings;
+    throw new Error(`Failed to load settings from ${settingsPath}: ${error}`);
   }
 };
 
@@ -95,22 +99,33 @@ export function replaceEnvVars(input: string): string;
 export function replaceEnvVars(
   input: Record<string, any> | string[] | string | undefined,
 ): Record<string, any> | string[] | string {
-  // Handle object input
+  // Handle object input - recursively expand all nested values
   if (input && typeof input === 'object' && !Array.isArray(input)) {
-    const res: Record<string, string> = {};
+    const res: Record<string, any> = {};
     for (const [key, value] of Object.entries(input)) {
       if (typeof value === 'string') {
         res[key] = expandEnvVars(value);
+      } else if (typeof value === 'object' && value !== null) {
+        // Recursively handle nested objects and arrays
+        res[key] = replaceEnvVars(value as any);
       } else {
-        res[key] = String(value);
+        // Preserve non-string, non-object values (numbers, booleans, etc.)
+        res[key] = value;
       }
     }
     return res;
   }
 
-  // Handle array input
+  // Handle array input - recursively expand all elements
   if (Array.isArray(input)) {
-    return input.map((item) => expandEnvVars(item));
+    return input.map((item) => {
+      if (typeof item === 'string') {
+        return expandEnvVars(item);
+      } else if (typeof item === 'object' && item !== null) {
+        return replaceEnvVars(item as any);
+      }
+      return item;
+    });
   }
 
   // Handle string input
@@ -138,3 +153,8 @@ export const expandEnvVars = (value: string): string => {
 };
 
 export default defaultConfig;
+
+export function getNameSeparator(): string {
+  const settings = loadSettings();
+  return settings.systemConfig?.nameSeparator || '-';
+}

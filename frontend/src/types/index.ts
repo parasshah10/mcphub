@@ -1,5 +1,5 @@
 // Server status types
-export type ServerStatus = 'connecting' | 'connected' | 'disconnected';
+export type ServerStatus = 'connecting' | 'connected' | 'disconnected' | 'oauth_required';
 
 // Market server types
 export interface MarketServerRepository {
@@ -121,6 +121,43 @@ export interface ServerConfig {
     resetTimeoutOnProgress?: boolean; // Reset timeout on progress notifications
     maxTotalTimeout?: number; // Maximum total timeout in milliseconds
   }; // MCP request options configuration
+  // OAuth authentication for upstream MCP servers
+  oauth?: {
+    clientId?: string; // OAuth client ID
+    clientSecret?: string; // OAuth client secret
+    scopes?: string[]; // Required OAuth scopes
+    accessToken?: string; // Pre-obtained access token (if available)
+    refreshToken?: string; // Refresh token for renewing access
+    dynamicRegistration?: {
+      enabled?: boolean; // Enable/disable dynamic registration
+      issuer?: string; // OAuth issuer URL for discovery
+      registrationEndpoint?: string; // Direct registration endpoint URL
+      metadata?: {
+        client_name?: string;
+        client_uri?: string;
+        logo_uri?: string;
+        scope?: string;
+        redirect_uris?: string[];
+        grant_types?: string[];
+        response_types?: string[];
+        token_endpoint_auth_method?: string;
+        contacts?: string[];
+        software_id?: string;
+        software_version?: string;
+        [key: string]: any;
+      };
+      initialAccessToken?: string;
+    };
+    resource?: string; // OAuth resource parameter (RFC8707)
+    authorizationEndpoint?: string; // Authorization endpoint (authorization code flow)
+    tokenEndpoint?: string; // Token endpoint for exchanging authorization codes for tokens
+    pendingAuthorization?: {
+      authorizationUrl?: string;
+      state?: string;
+      codeVerifier?: string;
+      createdAt?: number;
+    };
+  };
   // OpenAPI specific configuration
   openapi?: {
     url?: string; // OpenAPI specification URL
@@ -172,6 +209,10 @@ export interface Server {
   prompts?: Prompt[];
   config?: ServerConfig;
   enabled?: boolean;
+  oauth?: {
+    authorizationUrl?: string;
+    state?: string;
+  };
 }
 
 // Group types
@@ -208,6 +249,16 @@ export interface ServerFormData {
     timeout?: number;
     resetTimeoutOnProgress?: boolean;
     maxTotalTimeout?: number;
+  };
+  oauth?: {
+    clientId?: string;
+    clientSecret?: string;
+    scopes?: string;
+    accessToken?: string;
+    refreshToken?: string;
+    authorizationEndpoint?: string;
+    tokenEndpoint?: string;
+    resource?: string;
   };
   // OpenAPI specific fields
   openapi?: {
@@ -308,4 +359,150 @@ export interface AuthResponse {
   token?: string;
   user?: IUser;
   message?: string;
+  isUsingDefaultPassword?: boolean;
+}
+
+// Official Registry types (from registry.modelcontextprotocol.io)
+export interface RegistryVariable {
+  choices?: string[];
+  default?: string;
+  description?: string;
+  format?: string;
+  isRequired?: boolean;
+  isSecret?: boolean;
+  value?: string;
+}
+
+export interface RegistryVariables {
+  [key: string]: RegistryVariable;
+}
+
+export interface RegistryEnvironmentVariable {
+  choices?: string[];
+  default?: string;
+  description?: string;
+  format?: string;
+  isRequired?: boolean;
+  isSecret?: boolean;
+  name: string;
+  value?: string;
+  variables?: RegistryVariables;
+}
+
+export interface RegistryPackageArgument {
+  choices?: string[];
+  default?: string;
+  description?: string;
+  format?: string;
+  isRepeated?: boolean;
+  isRequired?: boolean;
+  isSecret?: boolean;
+  name: string;
+  type?: string;
+  value?: string;
+  valueHint?: string;
+  variables?: RegistryVariables;
+}
+
+export interface RegistryTransportHeader {
+  choices?: string[];
+  default?: string;
+  description?: string;
+  format?: string;
+  isRequired?: boolean;
+  isSecret?: boolean;
+  name: string;
+  value?: string;
+  variables?: RegistryVariables;
+}
+
+export interface RegistryTransport {
+  headers?: RegistryTransportHeader[];
+  type: string;
+  url?: string;
+}
+
+export interface RegistryPackage {
+  environmentVariables?: RegistryEnvironmentVariable[];
+  fileSha256?: string;
+  identifier: string;
+  packageArguments?: RegistryPackageArgument[];
+  registryBaseUrl?: string;
+  registryType: string;
+  runtimeArguments?: RegistryPackageArgument[];
+  runtimeHint?: string;
+  transport?: RegistryTransport;
+  version?: string;
+}
+
+export interface RegistryRemote {
+  headers?: RegistryTransportHeader[];
+  type: string;
+  url: string;
+}
+
+export interface RegistryRepository {
+  id?: string;
+  source?: string;
+  subfolder?: string;
+  url?: string;
+}
+
+export interface RegistryIcon {
+  mimeType: string;
+  sizes?: string[];
+  src: string;
+  theme?: string;
+}
+
+export interface RegistryServerData {
+  $schema?: string;
+  _meta?: {
+    'io.modelcontextprotocol.registry/publisher-provided'?: Record<string, any>;
+  };
+  description: string;
+  icons?: RegistryIcon[];
+  name: string;
+  packages?: RegistryPackage[];
+  remotes?: RegistryRemote[];
+  repository?: RegistryRepository;
+  title: string;
+  version: string;
+  websiteUrl?: string;
+}
+
+export interface RegistryOfficialMeta {
+  isLatest?: boolean;
+  publishedAt?: string;
+  status?: string;
+  updatedAt?: string;
+}
+
+export interface RegistryServerEntry {
+  _meta?: {
+    'io.modelcontextprotocol.registry/official'?: RegistryOfficialMeta;
+  };
+  server: RegistryServerData;
+}
+
+export interface RegistryMetadata {
+  count: number;
+  nextCursor?: string;
+}
+
+export interface RegistryServersResponse {
+  metadata: RegistryMetadata;
+  servers: RegistryServerEntry[];
+}
+
+export interface RegistryServerVersionsResponse {
+  metadata: RegistryMetadata;
+  servers: RegistryServerEntry[];
+}
+
+export interface RegistryServerVersionResponse {
+  _meta?: {
+    'io.modelcontextprotocol.registry/official'?: RegistryOfficialMeta;
+  };
+  server: RegistryServerData;
 }

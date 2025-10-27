@@ -1,17 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { MarketServer, CloudServer, ServerConfig } from '@/types';
+import {
+  MarketServer,
+  CloudServer,
+  ServerConfig,
+  RegistryServerEntry,
+  RegistryServerData,
+} from '@/types';
 import { useMarketData } from '@/hooks/useMarketData';
 import { useCloudData } from '@/hooks/useCloudData';
+import { useRegistryData } from '@/hooks/useRegistryData';
 import { useToast } from '@/contexts/ToastContext';
 import { apiPost } from '@/utils/fetchInterceptor';
 import MarketServerCard from '@/components/MarketServerCard';
 import MarketServerDetail from '@/components/MarketServerDetail';
 import CloudServerCard from '@/components/CloudServerCard';
 import CloudServerDetail from '@/components/CloudServerDetail';
+import RegistryServerCard from '@/components/RegistryServerCard';
+import RegistryServerDetail from '@/components/RegistryServerDetail';
 import MCPRouterApiKeyError from '@/components/MCPRouterApiKeyError';
 import Pagination from '@/components/ui/Pagination';
+import CursorPagination from '@/components/ui/CursorPagination';
 
 const MarketPage: React.FC = () => {
   const { t } = useTranslation();
@@ -19,7 +29,7 @@ const MarketPage: React.FC = () => {
   const { serverName } = useParams<{ serverName?: string }>();
   const { showToast } = useToast();
 
-  // Get tab from URL search params, default to cloud market
+  // Get tab from URL search params
   const [searchParams, setSearchParams] = useSearchParams();
   const currentTab = searchParams.get('tab') || 'cloud';
 
@@ -44,10 +54,10 @@ const MarketPage: React.FC = () => {
     totalPages: localTotalPages,
     changePage: changeLocalPage,
     serversPerPage: localServersPerPage,
-    changeServersPerPage: changeLocalServersPerPage
+    changeServersPerPage: changeLocalServersPerPage,
   } = useMarketData();
 
-  // Cloud market data  
+  // Cloud market data
   const {
     servers: cloudServers,
     allServers: allCloudServers,
@@ -61,28 +71,64 @@ const MarketPage: React.FC = () => {
     totalPages: cloudTotalPages,
     changePage: changeCloudPage,
     serversPerPage: cloudServersPerPage,
-    changeServersPerPage: changeCloudServersPerPage
+    changeServersPerPage: changeCloudServersPerPage,
   } = useCloudData();
+
+  // Registry data
+  const {
+    servers: registryServers,
+    allServers: allRegistryServers,
+    loading: registryLoading,
+    error: registryError,
+    setError: setRegistryError,
+    searchServers: searchRegistryServers,
+    clearSearch: clearRegistrySearch,
+    fetchServerByName: fetchRegistryServerByName,
+    fetchServerVersions: fetchRegistryServerVersions,
+    // Cursor-based pagination
+    currentPage: registryCurrentPage,
+    totalPages: registryTotalPages,
+    hasNextPage: registryHasNextPage,
+    hasPreviousPage: registryHasPreviousPage,
+    changePage: changeRegistryPage,
+    goToNextPage: goToRegistryNextPage,
+    goToPreviousPage: goToRegistryPreviousPage,
+    serversPerPage: registryServersPerPage,
+    changeServersPerPage: changeRegistryServersPerPage,
+  } = useRegistryData();
 
   const [selectedServer, setSelectedServer] = useState<MarketServer | null>(null);
   const [selectedCloudServer, setSelectedCloudServer] = useState<CloudServer | null>(null);
+  const [selectedRegistryServer, setSelectedRegistryServer] = useState<RegistryServerEntry | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [registrySearchQuery, setRegistrySearchQuery] = useState('');
   const [installing, setInstalling] = useState(false);
   const [installedCloudServers, setInstalledCloudServers] = useState<Set<string>>(new Set());
+  const [installedRegistryServers, setInstalledRegistryServers] = useState<Set<string>>(new Set());
 
   // Load server details if a server name is in the URL
   useEffect(() => {
     const loadServerDetails = async () => {
       if (serverName) {
-        // Determine if it's a cloud or local server based on the current tab
+        // Determine if it's a cloud, local, or registry server based on the current tab
         if (currentTab === 'cloud') {
           // Try to find the server in cloud servers
-          const server = cloudServers.find(s => s.name === serverName);
+          const server = cloudServers.find((s) => s.name === serverName);
           if (server) {
             setSelectedCloudServer(server);
           } else {
             // If server not found, navigate back to market page
             navigate('/market?tab=cloud');
+          }
+        } else if (currentTab === 'registry') {
+          console.log('Loading registry server details for:', serverName);
+          // Registry market
+          const serverEntry = await fetchRegistryServerByName(serverName);
+          if (serverEntry) {
+            setSelectedRegistryServer(serverEntry);
+          } else {
+            // If server not found, navigate back to market page
+            navigate('/market?tab=registry');
           }
         } else {
           // Local market
@@ -97,14 +143,22 @@ const MarketPage: React.FC = () => {
       } else {
         setSelectedServer(null);
         setSelectedCloudServer(null);
+        setSelectedRegistryServer(null);
       }
     };
 
     loadServerDetails();
-  }, [serverName, currentTab, cloudServers, fetchLocalServerByName, navigate]);
+  }, [
+    serverName,
+    currentTab,
+    cloudServers,
+    fetchLocalServerByName,
+    fetchRegistryServerByName,
+    navigate,
+  ]);
 
   // Tab switching handler
-  const switchTab = (tab: 'local' | 'cloud') => {
+  const switchTab = (tab: 'local' | 'cloud' | 'registry') => {
     const newSearchParams = new URLSearchParams(searchParams);
     newSearchParams.set('tab', tab);
     setSearchParams(newSearchParams);
@@ -118,6 +172,8 @@ const MarketPage: React.FC = () => {
     e.preventDefault();
     if (currentTab === 'local') {
       searchLocalServers(searchQuery);
+    } else if (currentTab === 'registry') {
+      searchRegistryServers(registrySearchQuery);
     }
     // Cloud search is not implemented in the original cloud page
   };
@@ -129,18 +185,35 @@ const MarketPage: React.FC = () => {
   };
 
   const handleClearFilters = () => {
-    setSearchQuery('');
     if (currentTab === 'local') {
+      setSearchQuery('');
       filterLocalByCategory('');
       filterLocalByTag('');
+    } else if (currentTab === 'registry') {
+      setRegistrySearchQuery('');
+      clearRegistrySearch();
     }
   };
 
-  const handleServerClick = (server: MarketServer | CloudServer) => {
+  const handleServerClick = (server: MarketServer | CloudServer | RegistryServerEntry) => {
     if (currentTab === 'cloud') {
-      navigate(`/market/${server.name}?tab=cloud`);
+      const cloudServer = server as CloudServer;
+      navigate(`/market/${cloudServer.name}?tab=cloud`);
+    } else if (currentTab === 'registry') {
+      const registryServer = server as RegistryServerEntry;
+      console.log('Registry server clicked:', registryServer);
+      const serverName = registryServer.server?.name;
+      console.log('Server name extracted:', serverName);
+      if (serverName) {
+        const targetUrl = `/market/${encodeURIComponent(serverName)}?tab=registry`;
+        console.log('Navigating to:', targetUrl);
+        navigate(targetUrl);
+      } else {
+        console.error('Server name is undefined in registry server:', registryServer);
+      }
     } else {
-      navigate(`/market/${server.name}?tab=local`);
+      const marketServer = server as MarketServer;
+      navigate(`/market/${marketServer.name}?tab=local`);
     }
   };
 
@@ -167,7 +240,7 @@ const MarketPage: React.FC = () => {
 
       const payload = {
         name: server.name,
-        config: config
+        config: config,
       };
 
       const result = await apiPost('/servers', payload);
@@ -179,9 +252,8 @@ const MarketPage: React.FC = () => {
       }
 
       // Update installed servers set
-      setInstalledCloudServers(prev => new Set(prev).add(server.name));
+      setInstalledCloudServers((prev) => new Set(prev).add(server.name));
       showToast(t('cloud.installSuccess', { name: server.title || server.name }), 'success');
-
     } catch (error) {
       console.error('Error installing cloud server:', error);
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -191,7 +263,41 @@ const MarketPage: React.FC = () => {
     }
   };
 
-  const handleCallTool = async (serverName: string, toolName: string, args: Record<string, any>) => {
+  // Handle registry server installation
+  const handleRegistryInstall = async (server: RegistryServerData, config: ServerConfig) => {
+    try {
+      setInstalling(true);
+
+      const payload = {
+        name: server.name,
+        config: config,
+      };
+
+      const result = await apiPost('/servers', payload);
+
+      if (!result.success) {
+        const errorMessage = result?.message || t('server.addError');
+        showToast(errorMessage, 'error');
+        return;
+      }
+
+      // Update installed servers set
+      setInstalledRegistryServers((prev) => new Set(prev).add(server.name));
+      showToast(t('registry.installSuccess', { name: server.title || server.name }), 'success');
+    } catch (error) {
+      console.error('Error installing registry server:', error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      showToast(t('registry.installError', { error: errorMessage }), 'error');
+    } finally {
+      setInstalling(false);
+    }
+  };
+
+  const handleCallTool = async (
+    serverName: string,
+    toolName: string,
+    args: Record<string, any>,
+  ) => {
     try {
       const result = await callServerTool(serverName, toolName, args);
       showToast(t('cloud.toolCallSuccess', { toolName }), 'success');
@@ -208,13 +314,17 @@ const MarketPage: React.FC = () => {
 
   // Helper function to check if error is MCPRouter API key not configured
   const isMCPRouterApiKeyError = (errorMessage: string) => {
-    return errorMessage === 'MCPROUTER_API_KEY_NOT_CONFIGURED' ||
-      errorMessage.toLowerCase().includes('mcprouter api key not configured');
+    return (
+      errorMessage === 'MCPROUTER_API_KEY_NOT_CONFIGURED' ||
+      errorMessage.toLowerCase().includes('mcprouter api key not configured')
+    );
   };
 
   const handlePageChange = (page: number) => {
     if (currentTab === 'local') {
       changeLocalPage(page);
+    } else if (currentTab === 'registry') {
+      changeRegistryPage(page);
     } else {
       changeCloudPage(page);
     }
@@ -226,6 +336,8 @@ const MarketPage: React.FC = () => {
     const newValue = parseInt(e.target.value, 10);
     if (currentTab === 'local') {
       changeLocalServersPerPage(newValue);
+    } else if (currentTab === 'registry') {
+      changeRegistryServersPerPage(newValue);
     } else {
       changeCloudServersPerPage(newValue);
     }
@@ -259,19 +371,50 @@ const MarketPage: React.FC = () => {
     );
   }
 
+  // Render registry server detail if selected
+  if (selectedRegistryServer) {
+    return (
+      <RegistryServerDetail
+        serverEntry={selectedRegistryServer}
+        onBack={handleBackToList}
+        onInstall={handleRegistryInstall}
+        installing={installing}
+        isInstalled={installedRegistryServers.has(selectedRegistryServer.server.name)}
+        fetchVersions={fetchRegistryServerVersions}
+      />
+    );
+  }
+
   // Get current data based on active tab
   const isLocalTab = currentTab === 'local';
-  const servers = isLocalTab ? localServers : cloudServers;
-  const allServers = isLocalTab ? allLocalServers : allCloudServers;
+  const isRegistryTab = currentTab === 'registry';
+  const servers = isLocalTab ? localServers : isRegistryTab ? registryServers : cloudServers;
+  const allServers = isLocalTab
+    ? allLocalServers
+    : isRegistryTab
+      ? allRegistryServers
+      : allCloudServers;
   const categories = isLocalTab ? localCategories : [];
-  const loading = isLocalTab ? localLoading : cloudLoading;
-  const error = isLocalTab ? localError : cloudError;
-  const setError = isLocalTab ? setLocalError : setCloudError;
+  const loading = isLocalTab ? localLoading : isRegistryTab ? registryLoading : cloudLoading;
+  const error = isLocalTab ? localError : isRegistryTab ? registryError : cloudError;
+  const setError = isLocalTab ? setLocalError : isRegistryTab ? setRegistryError : setCloudError;
   const selectedCategory = isLocalTab ? selectedLocalCategory : '';
   const selectedTag = isLocalTab ? selectedLocalTag : '';
-  const currentPage = isLocalTab ? localCurrentPage : cloudCurrentPage;
-  const totalPages = isLocalTab ? localTotalPages : cloudTotalPages;
-  const serversPerPage = isLocalTab ? localServersPerPage : cloudServersPerPage;
+  const currentPage = isLocalTab
+    ? localCurrentPage
+    : isRegistryTab
+      ? registryCurrentPage
+      : cloudCurrentPage;
+  const totalPages = isLocalTab
+    ? localTotalPages
+    : isRegistryTab
+      ? registryTotalPages
+      : cloudTotalPages;
+  const serversPerPage = isLocalTab
+    ? localServersPerPage
+    : isRegistryTab
+      ? registryServersPerPage
+      : cloudServersPerPage;
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -282,7 +425,7 @@ const MarketPage: React.FC = () => {
             <button
               onClick={() => switchTab('cloud')}
               className={`py-2 px-2 sm:px-1 border-b-2 font-medium text-sm sm:text-lg whitespace-nowrap hover:cursor-pointer transition-colors duration-200 ${
-                !isLocalTab
+                !isLocalTab && !isRegistryTab
                   ? 'border-blue-500 text-blue-600 dark:text-blue-400'
                   : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300'
               }`}
@@ -323,6 +466,28 @@ const MarketPage: React.FC = () => {
                 )
               </span>
             </button>
+            <button
+              onClick={() => switchTab('registry')}
+              className={`py-2 px-1 border-b-2 font-medium text-lg hover:cursor-pointer transition-colors duration-200 ${
+                isRegistryTab
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              {t('registry.title')}
+              <span className="text-xs text-gray-400 font-normal ml-1">
+                (
+                <a
+                  href="https://registry.modelcontextprotocol.io"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="external-link"
+                >
+                  {t('registry.official')}
+                </a>
+                )
+              </span>
+            </button>
           </nav>
         </div>
       </div>
@@ -350,16 +515,24 @@ const MarketPage: React.FC = () => {
         </>
       )}
 
-      {/* Search bar for local market only - responsive */}
-      {isLocalTab && (
+      {/* Search bar for local market and registry */}
+      {(isLocalTab || isRegistryTab) && (
         <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-3 sm:p-6 mb-4 sm:mb-6 page-card">
           <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-2 sm:gap-4">
             <div className="flex-grow">
               <input
                 type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={t('market.searchPlaceholder')}
+                value={isRegistryTab ? registrySearchQuery : searchQuery}
+                onChange={(e) => {
+                  if (isRegistryTab) {
+                    setRegistrySearchQuery(e.target.value);
+                  } else {
+                    setSearchQuery(e.target.value);
+                  }
+                }}
+                placeholder={
+                  isRegistryTab ? t('registry.searchPlaceholder') : t('market.searchPlaceholder')
+                }
                 className="shadow appearance-none border border-gray-200 dark:border-gray-700 rounded w-full py-2 px-3 text-gray-700 dark:text-gray-300 leading-tight focus:outline-none focus:shadow-outline form-input text-sm sm:text-base"
               />
             </div>
@@ -368,15 +541,16 @@ const MarketPage: React.FC = () => {
                 type="submit"
                 className="flex-1 sm:flex-none px-4 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400 rounded hover:bg-blue-200 dark:hover:bg-blue-800/40 flex items-center justify-center text-sm btn-primary transition-all duration-200"
               >
-                {t('market.search')}
+                {isRegistryTab ? t('registry.search') : t('market.search')}
               </button>
-              {(searchQuery || selectedCategory || selectedTag) && (
+              {((isLocalTab && (searchQuery || selectedCategory || selectedTag)) ||
+                (isRegistryTab && registrySearchQuery)) && (
                 <button
                   type="button"
                   onClick={handleClearFilters}
                   className="flex-1 sm:flex-none border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-medium py-2 px-4 rounded hover:bg-gray-50 dark:hover:bg-gray-700 btn-secondary transition-all duration-200 text-sm"
                 >
-                  {t('market.clearFilters')}
+                  {isRegistryTab ? t('registry.clearFilters') : t('market.clearFilters')}
                 </button>
               )}
             </div>
@@ -397,8 +571,8 @@ const MarketPage: React.FC = () => {
                       {t('market.categories')}
                     </h3>
                     {selectedCategory && (
-                      <span 
-                        className="text-xs text-blue-600 dark:text-blue-400 cursor-pointer hover:underline transition-colors duration-200" 
+                      <span
+                        className="text-xs text-blue-600 dark:text-blue-400 cursor-pointer hover:underline transition-colors duration-200"
                         onClick={() => filterLocalByCategory('')}
                       >
                         {t('market.clearCategoryFilter')}
@@ -467,18 +641,28 @@ const MarketPage: React.FC = () => {
           ) : servers.length === 0 ? (
             <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 sm:p-8">
               <p className="text-gray-600 dark:text-gray-400 text-sm sm:text-base text-center">
-                {isLocalTab ? t('market.noServers') : t('cloud.noServers')}
+                {isLocalTab
+                  ? t('market.noServers')
+                  : isRegistryTab
+                    ? t('registry.noServers')
+                    : t('cloud.noServers')}
               </p>
             </div>
           ) : (
             <>
               {/* Server grid - responsive columns */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
-                {servers.map((server, index) => (
+                {servers.map((server, index) =>
                   isLocalTab ? (
                     <MarketServerCard
                       key={index}
                       server={server as MarketServer}
+                      onClick={handleServerClick}
+                    />
+                  ) : isRegistryTab ? (
+                    <RegistryServerCard
+                      key={index}
+                      serverEntry={server as RegistryServerEntry}
                       onClick={handleServerClick}
                     />
                   ) : (
@@ -487,39 +671,58 @@ const MarketPage: React.FC = () => {
                       server={server as CloudServer}
                       onClick={handleServerClick}
                     />
-                  )
-                ))}
+                  ),
+                )}
               </div>
 
               {/* Pagination controls - responsive */}
               <div className="flex flex-col sm:flex-row justify-between items-center gap-3 sm:gap-4 mt-4 sm:mt-6">
                 <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 order-2 sm:order-1">
-                  {isLocalTab ? (
-                    t('market.showing', {
-                      from: (currentPage - 1) * serversPerPage + 1,
-                      to: Math.min(currentPage * serversPerPage, allServers.length),
-                      total: allServers.length
-                    })
-                  ) : (
-                    t('cloud.showing', {
-                      from: (currentPage - 1) * serversPerPage + 1,
-                      to: Math.min(currentPage * serversPerPage, allServers.length),
-                      total: allServers.length
-                    })
-                  )}
+                  {isLocalTab
+                    ? t('market.showing', {
+                        from: (currentPage - 1) * serversPerPage + 1,
+                        to: Math.min(currentPage * serversPerPage, allServers.length),
+                        total: allServers.length
+                      })
+                    : isRegistryTab
+                      ? t('registry.showing', {
+                          from: (currentPage - 1) * serversPerPage + 1,
+                          to: (currentPage - 1) * serversPerPage + servers.length,
+                          total: allServers.length + (registryHasNextPage ? '+' : ''),
+                        })
+                      : t('cloud.showing', {
+                          from: (currentPage - 1) * serversPerPage + 1,
+                          to: Math.min(currentPage * serversPerPage, allServers.length),
+                          total: allServers.length,
+                        })}
                 </div>
                 
                 <div className="order-1 sm:order-2">
-                  <Pagination
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onPageChange={handlePageChange}
-                  />
+                  {isRegistryTab ? (
+                    <CursorPagination
+                      currentPage={currentPage}
+                      hasNextPage={registryHasNextPage}
+                      hasPreviousPage={registryHasPreviousPage}
+                      onNextPage={goToRegistryNextPage}
+                      onPreviousPage={goToRegistryPreviousPage}
+                    />
+                  ) : (
+                    <Pagination
+                      currentPage={currentPage}
+                      totalPages={totalPages}
+                      onPageChange={handlePageChange}
+                    />
+                  )}
                 </div>
                 
                 <div className="flex items-center space-x-2 order-3">
                   <label htmlFor="perPage" className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">
-                    {isLocalTab ? t('market.perPage') : t('cloud.perPage')}:
+                    {isLocalTab
+                      ? t('market.perPage')
+                      : isRegistryTab
+                        ? t('registry.perPage')
+                        : t('cloud.perPage')}
+                    :
                   </label>
                   <select
                     id="perPage"

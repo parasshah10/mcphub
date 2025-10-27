@@ -15,9 +15,27 @@ import {
 } from './services/sseService.js';
 import { initializeDefaultUser } from './models/User.js';
 import { sseUserContextMiddleware } from './middlewares/userContext.js';
+import { findPackageRoot } from './utils/path.js';
+import { getCurrentModuleDir } from './utils/moduleDir.js';
+import { initOAuthProvider, getOAuthRouter } from './services/oauthService.js';
 
-// Get the current working directory (will be project root in most cases)
-const currentFileDir = process.cwd() + '/src';
+/**
+ * Get the directory of the current module
+ * This is wrapped in a function to allow easy mocking in test environments
+ */
+function getCurrentFileDir(): string {
+  // In test environments, use process.cwd() to avoid import.meta issues
+  if (process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID !== undefined) {
+    return process.cwd();
+  }
+
+  try {
+    return getCurrentModuleDir();
+  } catch {
+    // Fallback for environments where import.meta might not be available
+    return process.cwd();
+  }
+}
 
 export class AppServer {
   private app: express.Application;
@@ -58,6 +76,16 @@ export class AppServer {
 
       // Initialize default admin user if no users exist
       await initializeDefaultUser();
+
+      // Initialize OAuth provider if configured
+      initOAuthProvider();
+      const oauthRouter = getOAuthRouter();
+      if (oauthRouter) {
+        // Mount OAuth router at the root level (before other routes)
+        // This must be at root level as per MCP OAuth specification
+        this.app.use(oauthRouter);
+        console.log('OAuth router mounted successfully');
+      }
 
       initMiddlewares(this.app);
       initRoutes(this.app);
@@ -185,10 +213,11 @@ export class AppServer {
   private findFrontendDistPath(): string | null {
     // Debug flag for detailed logging
     const debug = process.env.DEBUG === 'true';
+    const currentDir = getCurrentFileDir();
 
     if (debug) {
       console.log('DEBUG: Current directory:', process.cwd());
-      console.log('DEBUG: Script directory:', currentFileDir);
+      console.log('DEBUG: Script directory:', currentDir);
     }
 
     // First, find the package root directory
@@ -223,51 +252,9 @@ export class AppServer {
 
   // Helper method to find the package root (where package.json is located)
   private findPackageRoot(): string | null {
-    const debug = process.env.DEBUG === 'true';
-
-    // Possible locations for package.json
-    const possibleRoots = [
-      // Standard npm package location
-      path.resolve(currentFileDir, '..', '..'),
-      // Current working directory
-      process.cwd(),
-      // When running from dist directory
-      path.resolve(currentFileDir, '..'),
-      // When installed via npx
-      path.resolve(currentFileDir, '..', '..', '..'),
-    ];
-
-    // Special handling for npx
-    if (process.argv[1] && process.argv[1].includes('_npx')) {
-      const npxDir = path.dirname(process.argv[1]);
-      possibleRoots.unshift(path.resolve(npxDir, '..'));
-    }
-
-    if (debug) {
-      console.log('DEBUG: Checking for package.json in:', possibleRoots);
-    }
-
-    for (const root of possibleRoots) {
-      const packageJsonPath = path.join(root, 'package.json');
-      if (fs.existsSync(packageJsonPath)) {
-        try {
-          const pkg = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
-          if (pkg.name === 'mcphub' || pkg.name === '@samanhappy/mcphub') {
-            if (debug) {
-              console.log(`DEBUG: Found package.json at ${packageJsonPath}`);
-            }
-            return root;
-          }
-        } catch (e) {
-          if (debug) {
-            console.error(`DEBUG: Failed to parse package.json at ${packageJsonPath}:`, e);
-          }
-          // Continue to the next potential root
-        }
-      }
-    }
-
-    return null;
+    // Use the shared utility function which properly handles ESM module paths
+    const currentDir = getCurrentFileDir();
+    return findPackageRoot(currentDir);
   }
 }
 

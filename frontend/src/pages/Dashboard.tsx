@@ -14,13 +14,15 @@ const DashboardPage: React.FC = () => {
     total: servers.length,
     online: servers.filter((server: Server) => server.status === 'connected').length,
     offline: servers.filter((server: Server) => server.status === 'disconnected').length,
-    connecting: servers.filter((server: Server) => server.status === 'connecting').length
+    connecting: servers.filter((server: Server) => server.status === 'connecting').length,
+    oauthRequired: servers.filter((server: Server) => server.status === 'oauth_required').length,
   };
 
   const statusTranslations: Record<string, string> = {
     connected: 'status.online',
     disconnected: 'status.offline',
-    connecting: 'status.connecting'
+    connecting: 'status.connecting',
+    oauth_required: 'status.oauthRequired',
   };
 
   return (

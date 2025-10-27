@@ -56,9 +56,18 @@ import {
   getCloudServerToolsList,
   callCloudTool,
 } from '../controllers/cloudController.js';
+import {
+  getAllRegistryServers,
+  getRegistryServerVersions,
+  getRegistryServerVersion,
+} from '../controllers/registryController.js';
 import { login, register, getCurrentUser, changePassword } from '../controllers/authController.js';
 import { getAllLogs, clearLogs, streamLogs } from '../controllers/logController.js';
-import { getRuntimeConfig, getPublicConfig } from '../controllers/configController.js';
+import {
+  getRuntimeConfig,
+  getPublicConfig,
+  getMcpSettingsJson,
+} from '../controllers/configController.js';
 import { callTool } from '../controllers/toolController.js';
 import { getPrompt } from '../controllers/promptController.js';
 import { uploadDxtFile, uploadMiddleware } from '../controllers/dxtController.js';
@@ -70,6 +79,7 @@ import {
   executeToolViaOpenAPI,
   getGroupOpenAPISpec,
 } from '../controllers/openApiController.js';
+import { handleOAuthCallback } from '../controllers/oauthCallbackController.js';
 import { auth } from '../middlewares/auth.js';
 
 const router = express.Router();
@@ -77,6 +87,9 @@ const router = express.Router();
 export const initRoutes = (app: express.Application): void => {
   // Health check endpoint (no auth required, accessible at /health)
   app.get('/health', healthCheck);
+
+  // OAuth callback endpoint (no auth required, public callback URL)
+  app.get('/oauth/callback', handleOAuthCallback);
 
   // API routes protected by auth middleware in middlewares/index.ts
   router.get('/servers', getAllServers);
@@ -144,10 +157,18 @@ export const initRoutes = (app: express.Application): void => {
   router.get('/cloud/servers/:serverName/tools', getCloudServerToolsList);
   router.post('/cloud/servers/:serverName/tools/:toolName/call', callCloudTool);
 
+  // Registry routes (proxy to official MCP registry)
+  router.get('/registry/servers', getAllRegistryServers);
+  router.get('/registry/servers/:serverName/versions', getRegistryServerVersions);
+  router.get('/registry/servers/:serverName/versions/:version', getRegistryServerVersion);
+
   // Log routes
   router.get('/logs', getAllLogs);
   router.delete('/logs', clearLogs);
   router.get('/logs/stream', streamLogs);
+
+  // MCP settings export route
+  router.get('/mcp-settings/export', getMcpSettingsJson);
 
   // Auth routes - move to router instead of app directly
   router.post(

@@ -12,9 +12,12 @@ import {
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
-import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
+import {
+  StreamableHTTPClientTransport,
+  StreamableHTTPClientTransportOptions,
+} from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { ServerInfo, ServerConfig, Tool } from '../types/index.js';
-import { loadSettings, expandEnvVars, replaceEnvVars } from '../config/index.js';
+import { loadSettings, expandEnvVars, replaceEnvVars, getNameSeparator } from '../config/index.js';
 import config from '../config/index.js';
 import { getGroup } from './sseService.js';
 import { getServersInGroup, getServerConfigInGroup } from './groupService.js';
@@ -23,6 +26,8 @@ import { OpenAPIClient } from '../clients/openapi.js';
 import { RequestContextService } from './requestContextService.js';
 import { getDataService } from './services.js';
 import { getServerDao, ServerConfigWithName } from '../dao/index.js';
+import { initializeAllOAuthClients } from './oauthService.js';
+import { createOAuthProvider } from './mcpOAuthProvider.js';
 
 const servers: { [sessionId: string]: Server } = {};
 
@@ -61,6 +66,10 @@ const setupKeepAlive = (serverInfo: ServerInfo, serverConfig: ServerConfig): voi
 };
 
 export const initUpstreamServers = async (): Promise<void> => {
+  // Initialize OAuth clients for servers with dynamic registration
+  await initializeAllOAuthClients();
+
+  // Register all tools from upstream servers
   await registerAllTools(true);
 };
 
@@ -157,28 +166,48 @@ export const cleanupAllServers = (): void => {
 };
 
 // Helper function to create transport based on server configuration
-const createTransportFromConfig = (name: string, conf: ServerConfig): any => {
+export const createTransportFromConfig = async (name: string, conf: ServerConfig): Promise<any> => {
   let transport;
 
   if (conf.type === 'streamable-http') {
-    const options: any = {};
-    if (conf.headers && Object.keys(conf.headers).length > 0) {
+    const options: StreamableHTTPClientTransportOptions = {};
+    const headers = conf.headers ? replaceEnvVars(conf.headers) : {};
+
+    if (Object.keys(headers).length > 0) {
       options.requestInit = {
-        headers: conf.headers,
+        headers,
       };
     }
+
+    // Create OAuth provider if configured - SDK will handle authentication automatically
+    const authProvider = await createOAuthProvider(name, conf);
+    if (authProvider) {
+      options.authProvider = authProvider;
+      console.log(`OAuth provider configured for server: ${name}`);
+    }
+
     transport = new StreamableHTTPClientTransport(new URL(conf.url || ''), options);
   } else if (conf.url) {
     // SSE transport
     const options: any = {};
-    if (conf.headers && Object.keys(conf.headers).length > 0) {
+    const headers = conf.headers ? replaceEnvVars(conf.headers) : {};
+
+    if (Object.keys(headers).length > 0) {
       options.eventSourceInit = {
-        headers: conf.headers,
+        headers,
       };
       options.requestInit = {
-        headers: conf.headers,
+        headers,
       };
     }
+
+    // Create OAuth provider if configured - SDK will handle authentication automatically
+    const authProvider = await createOAuthProvider(name, conf);
+    if (authProvider) {
+      options.authProvider = authProvider;
+      console.log(`OAuth provider configured for server: ${name}`);
+    }
+
     transport = new SSEClientTransport(new URL(conf.url), options);
   } else if (conf.command && conf.args) {
     // Stdio transport
@@ -208,6 +237,7 @@ const createTransportFromConfig = (name: string, conf: ServerConfig): any => {
       env['npm_config_registry'] = settings.systemConfig.install.npmRegistry;
     }
 
+    // Expand environment variables in command
     transport = new StdioClientTransport({
       cwd: os.homedir(),
       command: conf.command,
@@ -245,10 +275,14 @@ const callToolWithReconnect = async (
       const isHttp40xError = error?.message?.startsWith?.('Error POSTing to endpoint (HTTP 40');
       // Only retry for StreamableHTTPClientTransport
       const isStreamableHttp = serverInfo.transport instanceof StreamableHTTPClientTransport;
-
-      if (isHttp40xError && attempt < maxRetries && serverInfo.transport && isStreamableHttp) {
+      const isSSE = serverInfo.transport instanceof SSEClientTransport;
+      if (
+        attempt < maxRetries &&
+        serverInfo.transport &&
+        ((isStreamableHttp && isHttp40xError) || isSSE)
+      ) {
         console.warn(
-          `HTTP 40x error detected for StreamableHTTP server ${serverInfo.name}, attempting reconnection (attempt ${attempt + 1}/${maxRetries + 1})`,
+          `${isHttp40xError ? 'HTTP 40x error' : 'error'} detected for ${isStreamableHttp ? 'StreamableHTTP' : 'SSE'} server ${serverInfo.name}, attempting reconnection (attempt ${attempt + 1}/${maxRetries + 1})`,
         );
 
         try {
@@ -267,7 +301,7 @@ const callToolWithReconnect = async (
           }
 
           // Recreate transport using helper function
-          const newTransport = createTransportFromConfig(serverInfo.name, server);
+          const newTransport = await createTransportFromConfig(serverInfo.name, server);
 
           // Create new client
           const client = new Client(
@@ -296,7 +330,7 @@ const callToolWithReconnect = async (
           try {
             const tools = await client.listTools({}, serverInfo.options || {});
             serverInfo.tools = tools.tools.map((tool) => ({
-              name: `${serverInfo.name}-${tool.name}`,
+              name: `${serverInfo.name}${getNameSeparator()}${tool.name}`,
               description: tool.description || '',
               inputSchema: cleanInputSchema(tool.inputSchema || {}),
             }));
@@ -343,230 +377,271 @@ export const initializeClientsFromSettings = async (
 ): Promise<ServerInfo[]> => {
   const allServers: ServerConfigWithName[] = await serverDao.findAll();
   const existingServerInfos = serverInfos;
-  serverInfos = [];
+  const nextServerInfos: ServerInfo[] = [];
 
-  for (const conf of allServers) {
-    const { name } = conf;
-    // Skip disabled servers
-    if (conf.enabled === false) {
-      console.log(`Skipping disabled server: ${name}`);
-      serverInfos.push({
-        name,
-        owner: conf.owner,
-        status: 'disconnected',
-        error: null,
-        tools: [],
-        prompts: [],
-        createTime: Date.now(),
-        enabled: false,
-      });
-      continue;
-    }
+  try {
+    for (const conf of allServers) {
+      const { name } = conf;
 
-    // Check if server is already connected
-    const existingServer = existingServerInfos.find(
-      (s) => s.name === name && s.status === 'connected',
-    );
-    if (existingServer && (!serverName || serverName !== name)) {
-      serverInfos.push({
-        ...existingServer,
-        enabled: conf.enabled === undefined ? true : conf.enabled,
-      });
-      console.log(`Server '${name}' is already connected.`);
-      continue;
-    }
+      // Expand environment variables in all configuration values
+      const expandedConf = replaceEnvVars(conf as any) as ServerConfigWithName;
 
-    let transport;
-    let openApiClient;
-    if (conf.type === 'openapi') {
-      // Handle OpenAPI type servers
-      if (!conf.openapi?.url && !conf.openapi?.schema) {
-        console.warn(
-          `Skipping OpenAPI server '${name}': missing OpenAPI specification URL or schema`,
-        );
-        serverInfos.push({
+      // Skip disabled servers
+      if (expandedConf.enabled === false) {
+        console.log(`Skipping disabled server: ${name}`);
+        nextServerInfos.push({
           name,
-          owner: conf.owner,
+          owner: expandedConf.owner,
           status: 'disconnected',
-          error: 'Missing OpenAPI specification URL or schema',
+          error: null,
           tools: [],
           prompts: [],
           createTime: Date.now(),
+          enabled: false,
         });
         continue;
       }
 
+      // Check if server is already connected
+      const existingServer = existingServerInfos.find(
+        (s) => s.name === name && s.status === 'connected',
+      );
+      if (existingServer && (!serverName || serverName !== name)) {
+        nextServerInfos.push({
+          ...existingServer,
+          enabled: expandedConf.enabled === undefined ? true : expandedConf.enabled,
+        });
+        console.log(`Server '${name}' is already connected.`);
+        continue;
+      }
+
+      let transport;
+      let openApiClient;
+      if (expandedConf.type === 'openapi') {
+        // Handle OpenAPI type servers
+        if (!expandedConf.openapi?.url && !expandedConf.openapi?.schema) {
+          console.warn(
+            `Skipping OpenAPI server '${name}': missing OpenAPI specification URL or schema`,
+          );
+          nextServerInfos.push({
+            name,
+            owner: expandedConf.owner,
+            status: 'disconnected',
+            error: 'Missing OpenAPI specification URL or schema',
+            tools: [],
+            prompts: [],
+            createTime: Date.now(),
+          });
+          continue;
+        }
+
+        // Create server info first and keep reference to it
+        const serverInfo: ServerInfo = {
+          name,
+          owner: expandedConf.owner,
+          status: 'connecting',
+          error: null,
+          tools: [],
+          prompts: [],
+          createTime: Date.now(),
+          enabled: expandedConf.enabled === undefined ? true : expandedConf.enabled,
+          config: expandedConf, // Store reference to expanded config for OpenAPI passthrough headers
+        };
+        nextServerInfos.push(serverInfo);
+
+        try {
+          // Create OpenAPI client instance
+          openApiClient = new OpenAPIClient(expandedConf);
+
+          console.log(`Initializing OpenAPI server: ${name}...`);
+
+          // Perform async initialization
+          await openApiClient.initialize();
+
+          // Convert OpenAPI tools to MCP tool format
+          const openApiTools = openApiClient.getTools();
+          const mcpTools: Tool[] = openApiTools.map((tool) => ({
+            name: `${name}${getNameSeparator()}${tool.name}`,
+            description: tool.description,
+            inputSchema: cleanInputSchema(tool.inputSchema),
+          }));
+
+          // Update server info with successful initialization
+          serverInfo.status = 'connected';
+          serverInfo.tools = mcpTools;
+          serverInfo.openApiClient = openApiClient;
+
+          console.log(
+            `Successfully initialized OpenAPI server: ${name} with ${mcpTools.length} tools`,
+          );
+
+          // Save tools as vector embeddings for search
+          saveToolsAsVectorEmbeddings(name, mcpTools);
+          continue;
+        } catch (error) {
+          console.error(`Failed to initialize OpenAPI server ${name}:`, error);
+
+          // Update the already pushed server info with error status
+          serverInfo.status = 'disconnected';
+          serverInfo.error = `Failed to initialize OpenAPI server: ${error}`;
+          continue;
+        }
+      } else {
+        transport = await createTransportFromConfig(name, expandedConf);
+      }
+
+      const client = new Client(
+        {
+          name: `mcp-client-${name}`,
+          version: '1.0.0',
+        },
+        {
+          capabilities: {
+            prompts: {},
+            resources: {},
+            tools: {},
+          },
+        },
+      );
+
+      const initRequestOptions = isInit
+        ? {
+            timeout: Number(config.initTimeout) || 60000,
+          }
+        : undefined;
+
+      // Get request options from server configuration, with fallbacks
+      const serverRequestOptions = expandedConf.options || {};
+      const requestOptions = {
+        timeout: serverRequestOptions.timeout || 60000,
+        resetTimeoutOnProgress: serverRequestOptions.resetTimeoutOnProgress || false,
+        maxTotalTimeout: serverRequestOptions.maxTotalTimeout,
+      };
+
       // Create server info first and keep reference to it
       const serverInfo: ServerInfo = {
         name,
-        owner: conf.owner,
+        owner: expandedConf.owner,
         status: 'connecting',
         error: null,
         tools: [],
         prompts: [],
+        client,
+        transport,
+        options: requestOptions,
         createTime: Date.now(),
-        enabled: conf.enabled === undefined ? true : conf.enabled,
-        config: conf, // Store reference to original config for OpenAPI passthrough headers
+        config: expandedConf, // Store reference to expanded config
       };
-      serverInfos.push(serverInfo);
 
-      try {
-        // Create OpenAPI client instance
-        openApiClient = new OpenAPIClient(conf);
-
-        console.log(`Initializing OpenAPI server: ${name}...`);
-
-        // Perform async initialization
-        await openApiClient.initialize();
-
-        // Convert OpenAPI tools to MCP tool format
-        const openApiTools = openApiClient.getTools();
-        const mcpTools: Tool[] = openApiTools.map((tool) => ({
-          name: `${name}-${tool.name}`,
-          description: tool.description,
-          inputSchema: cleanInputSchema(tool.inputSchema),
-        }));
-
-        // Update server info with successful initialization
-        serverInfo.status = 'connected';
-        serverInfo.tools = mcpTools;
-        serverInfo.openApiClient = openApiClient;
-
-        console.log(
-          `Successfully initialized OpenAPI server: ${name} with ${mcpTools.length} tools`,
-        );
-
-        // Save tools as vector embeddings for search
-        saveToolsAsVectorEmbeddings(name, mcpTools);
-        continue;
-      } catch (error) {
-        console.error(`Failed to initialize OpenAPI server ${name}:`, error);
-
-        // Update the already pushed server info with error status
-        serverInfo.status = 'disconnected';
-        serverInfo.error = `Failed to initialize OpenAPI server: ${error}`;
-        continue;
+      const pendingAuth = expandedConf.oauth?.pendingAuthorization;
+      if (pendingAuth) {
+        serverInfo.status = 'oauth_required';
+        serverInfo.error = null;
+        serverInfo.oauth = {
+          authorizationUrl: pendingAuth.authorizationUrl,
+          state: pendingAuth.state,
+          codeVerifier: pendingAuth.codeVerifier,
+        };
       }
-    } else {
-      transport = createTransportFromConfig(name, conf);
+      nextServerInfos.push(serverInfo);
+
+      client
+        .connect(transport, initRequestOptions || requestOptions)
+        .then(() => {
+          console.log(`Successfully connected client for server: ${name}`);
+          const capabilities: ServerCapabilities | undefined = client.getServerCapabilities();
+          console.log(`Server capabilities: ${JSON.stringify(capabilities)}`);
+
+          let dataError: Error | null = null;
+          if (capabilities?.tools) {
+            client
+              .listTools({}, initRequestOptions || requestOptions)
+              .then((tools) => {
+                console.log(`Successfully listed ${tools.tools.length} tools for server: ${name}`);
+                serverInfo.tools = tools.tools.map((tool) => ({
+                  name: `${name}${getNameSeparator()}${tool.name}`,
+                  description: tool.description || '',
+                  inputSchema: cleanInputSchema(tool.inputSchema || {}),
+                }));
+                // Save tools as vector embeddings for search
+                saveToolsAsVectorEmbeddings(name, serverInfo.tools);
+              })
+              .catch((error) => {
+                console.error(
+                  `Failed to list tools for server ${name} by error: ${error} with stack: ${error.stack}`,
+                );
+                dataError = error;
+              });
+          }
+
+          if (capabilities?.prompts) {
+            client
+              .listPrompts({}, initRequestOptions || requestOptions)
+              .then((prompts) => {
+                console.log(
+                  `Successfully listed ${prompts.prompts.length} prompts for server: ${name}`,
+                );
+                serverInfo.prompts = prompts.prompts.map((prompt) => ({
+                  name: `${name}${getNameSeparator()}${prompt.name}`,
+                  title: prompt.title,
+                  description: prompt.description,
+                  arguments: prompt.arguments,
+                }));
+              })
+              .catch((error) => {
+                console.error(
+                  `Failed to list prompts for server ${name} by error: ${error} with stack: ${error.stack}`,
+                );
+                dataError = error;
+              });
+          }
+
+          if (!dataError) {
+            serverInfo.status = 'connected';
+            serverInfo.error = null;
+
+            // Set up keep-alive ping for SSE connections
+            setupKeepAlive(serverInfo, expandedConf);
+          } else {
+            serverInfo.status = 'disconnected';
+            serverInfo.error = `Failed to list data: ${dataError} `;
+          }
+        })
+        .catch(async (error) => {
+          // Check if this is an OAuth authorization error
+          const isOAuthError =
+            error?.message?.includes('OAuth authorization required') ||
+            error?.message?.includes('Authorization required');
+
+          if (isOAuthError) {
+            // OAuth provider should have already set the status to 'oauth_required'
+            // and stored the authorization URL in serverInfo.oauth
+            console.log(
+              `OAuth authorization required for server ${name}. Status should be set to 'oauth_required'.`,
+            );
+            // Make sure status is set correctly
+            if (serverInfo.status !== 'oauth_required') {
+              serverInfo.status = 'oauth_required';
+            }
+            serverInfo.error = null;
+          } else {
+            console.error(
+              `Failed to connect client for server ${name} by error: ${error} with stack: ${error.stack}`,
+            );
+            // Other connection errors
+            serverInfo.status = 'disconnected';
+            serverInfo.error = `Failed to connect: ${error.stack} `;
+          }
+        });
+      console.log(`Initialized client for server: ${name}`);
     }
-
-    const client = new Client(
-      {
-        name: `mcp-client-${name}`,
-        version: '1.0.0',
-      },
-      {
-        capabilities: {
-          prompts: {},
-          resources: {},
-          tools: {},
-        },
-      },
-    );
-
-    const initRequestOptions = isInit
-      ? {
-          timeout: Number(config.initTimeout) || 60000,
-        }
-      : undefined;
-
-    // Get request options from server configuration, with fallbacks
-    const serverRequestOptions = conf.options || {};
-    const requestOptions = {
-      timeout: serverRequestOptions.timeout || 60000,
-      resetTimeoutOnProgress: serverRequestOptions.resetTimeoutOnProgress || false,
-      maxTotalTimeout: serverRequestOptions.maxTotalTimeout,
-    };
-
-    // Create server info first and keep reference to it
-    const serverInfo: ServerInfo = {
-      name,
-      owner: conf.owner,
-      status: 'connecting',
-      error: null,
-      tools: [],
-      prompts: [],
-      client,
-      transport,
-      options: requestOptions,
-      createTime: Date.now(),
-      config: conf, // Store reference to original config
-    };
-    serverInfos.push(serverInfo);
-
-    client
-      .connect(transport, initRequestOptions || requestOptions)
-      .then(() => {
-        console.log(`Successfully connected client for server: ${name}`);
-        const capabilities: ServerCapabilities | undefined = client.getServerCapabilities();
-        console.log(`Server capabilities: ${JSON.stringify(capabilities)}`);
-
-        let dataError: Error | null = null;
-        if (capabilities?.tools) {
-          client
-            .listTools({}, initRequestOptions || requestOptions)
-            .then((tools) => {
-              console.log(`Successfully listed ${tools.tools.length} tools for server: ${name}`);
-              serverInfo.tools = tools.tools.map((tool) => ({
-                name: `${name}-${tool.name}`,
-                description: tool.description || '',
-                inputSchema: cleanInputSchema(tool.inputSchema || {}),
-              }));
-              // Save tools as vector embeddings for search
-              saveToolsAsVectorEmbeddings(name, serverInfo.tools);
-            })
-            .catch((error) => {
-              console.error(
-                `Failed to list tools for server ${name} by error: ${error} with stack: ${error.stack}`,
-              );
-              dataError = error;
-            });
-        }
-
-        if (capabilities?.prompts) {
-          client
-            .listPrompts({}, initRequestOptions || requestOptions)
-            .then((prompts) => {
-              console.log(
-                `Successfully listed ${prompts.prompts.length} prompts for server: ${name}`,
-              );
-              serverInfo.prompts = prompts.prompts.map((prompt) => ({
-                name: `${name}-${prompt.name}`,
-                title: prompt.title,
-                description: prompt.description,
-                arguments: prompt.arguments,
-              }));
-            })
-            .catch((error) => {
-              console.error(
-                `Failed to list prompts for server ${name} by error: ${error} with stack: ${error.stack}`,
-              );
-              dataError = error;
-            });
-        }
-
-        if (!dataError) {
-          serverInfo.status = 'connected';
-          serverInfo.error = null;
-
-          // Set up keep-alive ping for SSE connections
-          setupKeepAlive(serverInfo, conf);
-        } else {
-          serverInfo.status = 'disconnected';
-          serverInfo.error = `Failed to list data: ${dataError} `;
-        }
-      })
-      .catch((error) => {
-        console.error(
-          `Failed to connect client for server ${name} by error: ${error} with stack: ${error.stack}`,
-        );
-        serverInfo.status = 'disconnected';
-        serverInfo.error = `Failed to connect: ${error.stack} `;
-      });
-    console.log(`Initialized client for server: ${name}`);
+  } catch (error) {
+    // Restore previous state if initialization fails to avoid exposing an empty server list
+    serverInfos = existingServerInfos;
+    throw error;
   }
 
+  serverInfos = nextServerInfos;
   return serverInfos;
 };
 
@@ -582,39 +657,48 @@ export const getServersInfo = async (): Promise<Omit<ServerInfo, 'client' | 'tra
   const filterServerInfos: ServerInfo[] = dataService.filterData
     ? dataService.filterData(serverInfos)
     : serverInfos;
-  const infos = filterServerInfos.map(({ name, status, tools, prompts, createTime, error }) => {
-    const serverConfig = allServers.find((server) => server.name === name);
-    const enabled = serverConfig ? serverConfig.enabled !== false : true;
+  const infos = filterServerInfos.map(
+    ({ name, status, tools, prompts, createTime, error, oauth }) => {
+      const serverConfig = allServers.find((server) => server.name === name);
+      const enabled = serverConfig ? serverConfig.enabled !== false : true;
 
-    // Add enabled status and custom description to each tool
-    const toolsWithEnabled = tools.map((tool) => {
-      const toolConfig = serverConfig?.tools?.[tool.name];
+      // Add enabled status and custom description to each tool
+      const toolsWithEnabled = tools.map((tool) => {
+        const toolConfig = serverConfig?.tools?.[tool.name];
+        return {
+          ...tool,
+          description: toolConfig?.description || tool.description, // Use custom description if available
+          enabled: toolConfig?.enabled !== false, // Default to true if not explicitly disabled
+        };
+      });
+
+      const promptsWithEnabled = prompts.map((prompt) => {
+        const promptConfig = serverConfig?.prompts?.[prompt.name];
+        return {
+          ...prompt,
+          description: promptConfig?.description || prompt.description, // Use custom description if available
+          enabled: promptConfig?.enabled !== false, // Default to true if not explicitly disabled
+        };
+      });
+
       return {
-        ...tool,
-        description: toolConfig?.description || tool.description, // Use custom description if available
-        enabled: toolConfig?.enabled !== false, // Default to true if not explicitly disabled
+        name,
+        status,
+        error,
+        tools: toolsWithEnabled,
+        prompts: promptsWithEnabled,
+        createTime,
+        enabled,
+        oauth: oauth
+          ? {
+              authorizationUrl: oauth.authorizationUrl,
+              state: oauth.state,
+              // Don't expose codeVerifier to frontend for security
+            }
+          : undefined,
       };
-    });
-
-    const promptsWithEnabled = prompts.map((prompt) => {
-      const promptConfig = serverConfig?.prompts?.[prompt.name];
-      return {
-        ...prompt,
-        description: promptConfig?.description || prompt.description, // Use custom description if available
-        enabled: promptConfig?.enabled !== false, // Default to true if not explicitly disabled
-      };
-    });
-
-    return {
-      name,
-      status,
-      error,
-      tools: toolsWithEnabled,
-      prompts: promptsWithEnabled,
-      createTime,
-      enabled,
-    };
-  });
+    },
+  );
   infos.sort((a, b) => {
     if (a.enabled === b.enabled) return 0;
     return a.enabled ? -1 : 1;
@@ -627,6 +711,51 @@ export const getServerByName = (name: string): ServerInfo | undefined => {
   if (!name) return undefined;
   const lowerCaseName = name.toLowerCase();
   return serverInfos.find((serverInfo) => serverInfo.name.toLowerCase() === lowerCaseName);
+};
+
+// Get server by OAuth state parameter
+export const getServerByOAuthState = (state: string): ServerInfo | undefined => {
+  return serverInfos.find((serverInfo) => serverInfo.oauth?.state === state);
+};
+
+/**
+ * Reconnect a server after OAuth authorization or configuration change
+ * This will close the existing connection and reinitialize the server
+ */
+export const reconnectServer = async (serverName: string): Promise<void> => {
+  console.log(`Reconnecting server: ${serverName}`);
+
+  const serverInfo = getServerByName(serverName);
+  if (!serverInfo) {
+    throw new Error(`Server not found: ${serverName}`);
+  }
+
+  // Close existing connection if any
+  if (serverInfo.client) {
+    try {
+      serverInfo.client.close();
+    } catch (error) {
+      console.warn(`Error closing client for server ${serverName}:`, error);
+    }
+  }
+
+  if (serverInfo.transport) {
+    try {
+      serverInfo.transport.close();
+    } catch (error) {
+      console.warn(`Error closing transport for server ${serverName}:`, error);
+    }
+  }
+
+  if (serverInfo.keepAliveIntervalId) {
+    clearInterval(serverInfo.keepAliveIntervalId);
+    serverInfo.keepAliveIntervalId = undefined;
+  }
+
+  // Reinitialize the server
+  await initializeClientsFromSettings(false, serverName);
+
+  console.log(`Successfully reconnected server: ${serverName}`);
 };
 
 // Filter tools by server configuration
@@ -773,30 +902,48 @@ export const handleListToolsRequest = async (_: any, extra: any) => {
   console.log(`Handling ListToolsRequest for group: ${group}`);
 
   // Special handling for $smart group to return special tools
-  if (group === '$smart') {
+  // Support both $smart and $smart/{group} patterns
+  if (group === '$smart' || group?.startsWith('$smart/')) {
+    // Extract target group if pattern is $smart/{group}
+    const targetGroup = group?.startsWith('$smart/') ? group.substring(7) : undefined;
+    
+    // Get info about available servers, filtered by target group if specified
+    let availableServers = serverInfos.filter(
+      (server) => server.status === 'connected' && server.enabled !== false,
+    );
+    
+    // If a target group is specified, filter servers to only those in the group
+    if (targetGroup) {
+      const serversInGroup = getServersInGroup(targetGroup);
+      if (serversInGroup && serversInGroup.length > 0) {
+        availableServers = availableServers.filter((server) =>
+          serversInGroup.includes(server.name),
+        );
+      }
+    }
+    
+    // Create simple server information with only server names
+    const serversList = availableServers
+      .map((server) => {
+        return `${server.name}`;
+      })
+      .join(', ');
+    
+    const scopeDescription = targetGroup
+      ? `servers in the "${targetGroup}" group`
+      : 'all available servers';
+    
     return {
       tools: [
         {
           name: 'search_tools',
-          description: (() => {
-            // Get info about available servers
-            const availableServers = serverInfos.filter(
-              (server) => server.status === 'connected' && server.enabled !== false,
-            );
-            // Create simple server information with only server names
-            const serversList = availableServers
-              .map((server) => {
-                return `${server.name}`;
-              })
-              .join(', ');
-            return `STEP 1 of 2: Use this tool FIRST to discover and search for relevant tools across all available servers. This tool and call_tool work together as a two-step process: 1) search_tools to find what you need, 2) call_tool to execute it.
+          description: `STEP 1 of 2: Use this tool FIRST to discover and search for relevant tools across ${scopeDescription}. This tool and call_tool work together as a two-step process: 1) search_tools to find what you need, 2) call_tool to execute it.
 
 For optimal results, use specific queries matching your exact needs. Call this tool multiple times with different queries for different parts of complex tasks. Example queries: "image generation tools", "code review tools", "data analysis", "translation capabilities", etc. Results are sorted by relevance using vector similarity.
 
 After finding relevant tools, you MUST use the call_tool to actually execute them. The search_tools only finds tools - it doesn't execute them.
 
-Available servers: ${serversList}`;
-          })(),
+Available servers: ${serversList}`,
           inputSchema: {
             type: 'object',
             properties: {
@@ -861,7 +1008,7 @@ Available servers: ${serversList}`;
         if (serverConfig && serverConfig.tools !== 'all' && Array.isArray(serverConfig.tools)) {
           // Filter tools based on group configuration
           const allowedToolNames = serverConfig.tools.map(
-            (toolName) => `${serverInfo.name}-${toolName}`,
+            (toolName) => `${serverInfo.name}${getNameSeparator()}${toolName}`,
           );
           enabledTools = enabledTools.filter((tool) => allowedToolNames.includes(tool.name));
         }
@@ -913,7 +1060,25 @@ export const handleCallToolRequest = async (request: any, extra: any) => {
       }
 
       console.log(`Using similarity threshold: ${thresholdNum} for query: "${query}"`);
-      const servers = undefined; // No server filtering
+      
+      // Determine server filtering based on group
+      const sessionId = extra.sessionId || '';
+      const group = getGroup(sessionId);
+      let servers: string[] | undefined = undefined; // No server filtering by default
+      
+      // If group is in format $smart/{group}, filter servers to that group
+      if (group?.startsWith('$smart/')) {
+        const targetGroup = group.substring(7);
+        const serversInGroup = getServersInGroup(targetGroup);
+        if (serversInGroup !== undefined && serversInGroup !== null) {
+          servers = serversInGroup;
+          if (servers.length > 0) {
+            console.log(`Filtering search to servers in group "${targetGroup}": ${servers.join(', ')}`);
+          } else {
+            console.log(`Group "${targetGroup}" has no servers, search will return no results`);
+          }
+        }
+      }
 
       const searchResults = await searchToolsByVector(query, limitNum, thresholdNum, servers);
       console.log(`Search results: ${JSON.stringify(searchResults)}`);
@@ -1048,8 +1213,10 @@ export const handleCallToolRequest = async (request: any, extra: any) => {
         );
 
         // Remove server prefix from tool name if present
-        const cleanToolName = toolName.startsWith(`${targetServerInfo.name}-`)
-          ? toolName.replace(`${targetServerInfo.name}-`, '')
+        const separator = getNameSeparator();
+        const prefix = `${targetServerInfo.name}${separator}`;
+        const cleanToolName = toolName.startsWith(prefix)
+          ? toolName.substring(prefix.length)
           : toolName;
 
         // Extract passthrough headers from extra or request context
@@ -1106,9 +1273,9 @@ export const handleCallToolRequest = async (request: any, extra: any) => {
         `Invoking tool '${toolName}' on server '${targetServerInfo.name}' with arguments: ${JSON.stringify(finalArgs)}`,
       );
 
-      toolName = toolName.startsWith(`${targetServerInfo.name}-`)
-        ? toolName.replace(`${targetServerInfo.name}-`, '')
-        : toolName;
+      const separator = getNameSeparator();
+      const prefix = `${targetServerInfo.name}${separator}`;
+      toolName = toolName.startsWith(prefix) ? toolName.substring(prefix.length) : toolName;
       const result = await callToolWithReconnect(
         targetServerInfo,
         {
@@ -1134,8 +1301,10 @@ export const handleCallToolRequest = async (request: any, extra: any) => {
       const openApiClient = serverInfo.openApiClient;
 
       // Remove server prefix from tool name if present
-      const cleanToolName = request.params.name.startsWith(`${serverInfo.name}-`)
-        ? request.params.name.replace(`${serverInfo.name}-`, '')
+      const separator = getNameSeparator();
+      const prefix = `${serverInfo.name}${separator}`;
+      const cleanToolName = request.params.name.startsWith(prefix)
+        ? request.params.name.substring(prefix.length)
         : request.params.name;
 
       console.log(
@@ -1192,8 +1361,10 @@ export const handleCallToolRequest = async (request: any, extra: any) => {
       throw new Error(`Client not found for server: ${serverInfo.name}`);
     }
 
-    request.params.name = request.params.name.startsWith(`${serverInfo.name}-`)
-      ? request.params.name.replace(`${serverInfo.name}-`, '')
+    const separator = getNameSeparator();
+    const prefix = `${serverInfo.name}${separator}`;
+    request.params.name = request.params.name.startsWith(prefix)
+      ? request.params.name.substring(prefix.length)
       : request.params.name;
     const result = await callToolWithReconnect(
       serverInfo,
@@ -1236,9 +1407,9 @@ export const handleGetPromptRequest = async (request: any, extra: any) => {
     }
 
     // Remove server prefix from prompt name if present
-    const cleanPromptName = name.startsWith(`${server.name}-`)
-      ? name.replace(`${server.name}-`, '')
-      : name;
+    const separator = getNameSeparator();
+    const prefix = `${server.name}${separator}`;
+    const cleanPromptName = name.startsWith(prefix) ? name.substring(prefix.length) : name;
 
     const promptParams = {
       name: cleanPromptName || '',

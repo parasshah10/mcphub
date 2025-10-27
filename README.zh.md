@@ -57,6 +57,45 @@ MCPHub 通过将多个 MCP（Model Context Protocol）服务器组织为灵活�
 }
 ```
 
+#### OAuth 配置（可选）
+
+MCPHub 支持通过 OAuth 2.0 访问上游 MCP 服务器。完整说明请参阅[《OAuth 功能指南》](docs/zh/features/oauth.mdx)。实际使用中通常会遇到两类配置：
+
+- **支持动态注册的服务器**（如 Vercel、Linear）：会公开全部元数据，MCPHub 可自动注册并完成授权，仅需声明服务器地址。
+- **需要手动配置客户端的服务器**（如 GitHub Copilot）：需要在提供商后台创建 OAuth 应用，并将获得的 Client ID/Secret 写入 MCPHub。
+
+动态注册示例：
+
+```json
+{
+  "mcpServers": {
+    "vercel": {
+      "type": "sse",
+      "url": "https://mcp.vercel.com"
+    }
+  }
+}
+```
+
+手动注册示例：
+
+```json
+{
+  "mcpServers": {
+    "github": {
+      "type": "sse",
+      "url": "https://api.githubcopilot.com/mcp/",
+      "oauth": {
+        "clientId": "${GITHUB_OAUTH_APP_ID}",
+        "clientSecret": "${GITHUB_OAUTH_APP_SECRET}"
+      }
+    }
+  }
+}
+```
+
+对于需要手动注册的提供商，请先在上游控制台创建 OAuth 应用，将回调地址设置为 `http://localhost:3000/oauth/callback`（或你的部署域名），然后在控制台或配置文件中填写凭据。
+
 ### Docker 部署
 
 **推荐**：挂载自定义配置：
@@ -106,7 +145,11 @@ http://localhost:3000/mcp
 智能路由是 MCPHub 的智能工具发现系统，使用向量语义搜索自动为任何给定任务找到最相关的工具。
 
 ```
+# 在所有服务器中搜索
 http://localhost:3000/mcp/$smart
+
+# 在特定分组中搜索
+http://localhost:3000/mcp/$smart/{group}
 ```
 
 **工作原理：**
@@ -115,6 +158,7 @@ http://localhost:3000/mcp/$smart
 2. **语义搜索**：用户查询转换为向量并使用余弦相似度与工具嵌入匹配
 3. **智能筛选**：动态阈值确保相关结果且无噪声
 4. **精确执行**：找到的工具可以直接执行并进行适当的参数验证
+5. **分组限定**：可选择将搜索限制在特定分组的服务器内以获得更精确的结果
 
 **设置要求：**
 
@@ -125,6 +169,23 @@ http://localhost:3000/mcp/$smart
 - 支持 pgvector 扩展的 PostgreSQL
 - OpenAI API 密钥（或兼容的嵌入服务）
 - 在 MCPHub 设置中启用智能路由
+
+**分组限定的智能路由**：
+
+您可以将智能路由与分组筛选结合使用，仅在特定服务器分组内搜索：
+
+```
+# 仅在生产服务器中搜索
+http://localhost:3000/mcp/$smart/production
+
+# 仅在开发服务器中搜索
+http://localhost:3000/mcp/$smart/development
+```
+
+这样可以实现：
+- **精准发现**：仅从相关服务器查找工具
+- **环境隔离**：按环境（开发、测试、生产）分离工具发现
+- **基于团队的访问**：将工具搜索限制在特定团队的服务器分组
 
 **基于分组的 HTTP 端点（推荐）**：
 ![分组](assets/group.zh.png)
@@ -164,7 +225,11 @@ http://localhost:3000/sse
 要启用智能路由，请使用：
 
 ```
+# 在所有服务器中搜索
 http://localhost:3000/sse/$smart
+
+# 在特定分组中搜索
+http://localhost:3000/sse/$smart/{group}
 ```
 
 要针对特定服务器分组进行访问，请使用基于分组的 SSE 端点：

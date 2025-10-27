@@ -2,6 +2,7 @@
 /node_modules
 /.pnp
 .pnp.js
+package-lock.json
 
 # production
 dist
@@ -26,3 +27,4 @@ yarn-error.log*
 coverage/
 
 data/
+temp-test-config/

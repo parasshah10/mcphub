@@ -40,6 +40,7 @@ interface SystemSettings {
     install?: InstallConfig;
     smartRouting?: SmartRoutingConfig;
     mcpRouter?: MCPRouterConfig;
+    nameSeparator?: string;
   };
 }
 
@@ -83,6 +84,8 @@ export const useSettingsData = () => {
     title: 'MCPHub',
     baseUrl: 'https://api.mcprouter.to/v1',
   });
+
+  const [nameSeparator, setNameSeparator] = useState<string>('-');
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -134,6 +137,9 @@ export const useSettingsData = () => {
           title: data.data.systemConfig.mcpRouter.title || 'MCPHub',
           baseUrl: data.data.systemConfig.mcpRouter.baseUrl || 'https://api.mcprouter.to/v1',
         });
+      }
+      if (data.success && data.data?.systemConfig?.nameSeparator !== undefined) {
+        setNameSeparator(data.data.systemConfig.nameSeparator);
       }
     } catch (error) {
       console.error('Failed to fetch settings:', error);
@@ -384,6 +390,51 @@ export const useSettingsData = () => {
     }
   };
 
+  // Update name separator
+  const updateNameSeparator = async (value: string) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const data = await apiPut('/system-config', {
+        nameSeparator: value,
+      });
+
+      if (data.success) {
+        setNameSeparator(value);
+        showToast(t('settings.restartRequired'), 'info');
+        return true;
+      } else {
+        showToast(data.message || t('errors.failedToUpdateSystemConfig'));
+        return false;
+      }
+    } catch (error) {
+      console.error('Failed to update name separator:', error);
+      const errorMessage =
+        error instanceof Error ? error.message : 'Failed to update name separator';
+      setError(errorMessage);
+      showToast(errorMessage);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const exportMCPSettings = async (serverName?: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      return await apiGet(`/mcp-settings/export?serverName=${serverName ? serverName : ''}`);
+    } catch (error) {
+      console.error('Failed to export MCP settings:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to export MCP settings';
+      setError(errorMessage);
+      showToast(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Fetch settings when the component mounts or refreshKey changes
   useEffect(() => {
     fetchSettings();
@@ -404,6 +455,7 @@ export const useSettingsData = () => {
     installConfig,
     smartRoutingConfig,
     mcpRouterConfig,
+    nameSeparator,
     loading,
     error,
     setError,
@@ -416,5 +468,7 @@ export const useSettingsData = () => {
     updateRoutingConfigBatch,
     updateMCPRouterConfig,
     updateMCPRouterConfigBatch,
+    updateNameSeparator,
+    exportMCPSettings,
   };
 };

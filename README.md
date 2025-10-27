@@ -19,6 +19,8 @@ MCPHub makes it easy to manage and scale multiple MCP (Model Context Protocol) s
 - **Hot-Swappable Configuration**: Add, remove, or update MCP servers on the fly — no downtime required.
 - **Group-Based Access Control**: Organize servers into customizable groups for streamlined permissions management.
 - **Secure Authentication**: Built-in user management with role-based access powered by JWT and bcrypt.
+- **OAuth 2.0 Support**: Full OAuth support for upstream MCP servers with proxy authorization capabilities.
+- **Environment Variable Expansion**: Use environment variables anywhere in your configuration for secure credential management. See [Environment Variables Guide](docs/environment-variables.md).
 - **Docker-Ready**: Deploy instantly with our containerized setup.
 
 ## 🔧 Quick Start
@@ -56,6 +58,45 @@ Create a `mcp_settings.json` file to customize your server settings:
   }
 }
 ```
+
+#### OAuth Configuration (Optional)
+
+MCPHub supports OAuth 2.0 for authenticating with upstream MCP servers. See the [OAuth feature guide](docs/features/oauth.mdx) for a full walkthrough. In practice you will run into two configuration patterns:
+
+- **Dynamic registration servers** (e.g., Vercel, Linear) publish all metadata and allow MCPHub to self-register. Simply declare the server URL and MCPHub handles the rest.
+- **Manually provisioned servers** (e.g., GitHub Copilot) require you to create an OAuth App and provide the issued client ID/secret to MCPHub.
+
+Dynamic registration example:
+
+```json
+{
+  "mcpServers": {
+    "vercel": {
+      "type": "sse",
+      "url": "https://mcp.vercel.com"
+    }
+  }
+}
+```
+
+Manual registration example:
+
+```json
+{
+  "mcpServers": {
+    "github": {
+      "type": "sse",
+      "url": "https://api.githubcopilot.com/mcp/",
+      "oauth": {
+        "clientId": "${GITHUB_OAUTH_APP_ID}",
+        "clientSecret": "${GITHUB_OAUTH_APP_SECRET}"
+      }
+    }
+  }
+}
+```
+
+For manual providers, create the OAuth App in the upstream console, set the redirect URI to `http://localhost:3000/oauth/callback` (or your deployed domain), and then plug the credentials into the dashboard or config file.
 
 ### Docker Deployment
 
@@ -106,7 +147,11 @@ This endpoint provides a unified streamable HTTP interface for all your MCP serv
 Smart Routing is MCPHub's intelligent tool discovery system that uses vector semantic search to automatically find the most relevant tools for any given task.
 
 ```
+# Search across all servers
 http://localhost:3000/mcp/$smart
+
+# Search within a specific group
+http://localhost:3000/mcp/$smart/{group}
 ```
 
 **How it Works:**
@@ -115,6 +160,7 @@ http://localhost:3000/mcp/$smart
 2. **Semantic Search**: User queries are converted to vectors and matched against tool embeddings using cosine similarity
 3. **Intelligent Filtering**: Dynamic thresholds ensure relevant results without noise
 4. **Precise Execution**: Found tools can be directly executed with proper parameter validation
+5. **Group Scoping**: Optionally limit searches to servers within a specific group for focused results
 
 **Setup Requirements:**
 
@@ -125,6 +171,23 @@ To enable Smart Routing, you need:
 - PostgreSQL with pgvector extension
 - OpenAI API key (or compatible embedding service)
 - Enable Smart Routing in MCPHub settings
+
+**Group-Scoped Smart Routing**:
+
+You can combine Smart Routing with group filtering to search only within specific server groups:
+
+```
+# Search only within production servers
+http://localhost:3000/mcp/$smart/production
+
+# Search only within development servers
+http://localhost:3000/mcp/$smart/development
+```
+
+This enables:
+- **Focused Discovery**: Find tools only from relevant servers
+- **Environment Isolation**: Separate tool discovery by environment (dev, staging, prod)
+- **Team-Based Access**: Limit tool search to team-specific server groups
 
 **Group-Specific Endpoints (Recommended)**:
 
@@ -164,7 +227,11 @@ http://localhost:3000/sse
 For smart routing, use:
 
 ```
+# Search across all servers
 http://localhost:3000/sse/$smart
+
+# Search within a specific group
+http://localhost:3000/sse/$smart/{group}
 ```
 
 For targeted access to specific server groups, use the group-based SSE endpoint:
