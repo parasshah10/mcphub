@@ -157,7 +157,7 @@ export class MCPHubOAuthProvider implements OAuthClientProvider {
       grant_types: metadata.grant_types || ['authorization_code', 'refresh_token'],
       response_types: metadata.response_types || ['code'],
       token_endpoint_auth_method: tokenEndpointAuthMethod,
-      scope: metadata.scope || this.serverConfig.oauth?.scopes?.join(' ') || 'openid',
+      scope: metadata.scope || this.serverConfig.oauth?.scopes?.join(' ') || undefined,
     };
   }
 
@@ -528,13 +528,13 @@ export class MCPHubOAuthProvider implements OAuthClientProvider {
 const prepopulateScopesIfMissing = async (
   serverName: string,
   serverConfig: ServerConfig,
-): Promise<void> => {
-  if (!serverConfig.oauth || serverConfig.oauth.scopes?.length) {
-    return;
+): Promise<ServerConfig> => {
+  if (serverConfig.oauth?.scopes?.length) {
+    return serverConfig;
   }
 
   if (!serverConfig.url) {
-    return;
+    return serverConfig;
   }
 
   try {
@@ -544,13 +544,9 @@ const prepopulateScopesIfMissing = async (
         oauth.scopes = scopes;
       });
 
-      if (!serverConfig.oauth) {
-        serverConfig.oauth = {};
-      }
-      serverConfig.oauth.scopes = scopes;
-
       if (updatedConfig) {
         console.log(`Stored auto-detected scopes for ${serverName}: ${scopes.join(', ')}`);
+        return updatedConfig;
       }
     }
   } catch (error) {
@@ -560,6 +556,7 @@ const prepopulateScopesIfMissing = async (
       }`,
     );
   }
+  return serverConfig;
 };
 
 /**
@@ -574,19 +571,19 @@ export const createOAuthProvider = async (
   serverConfig: ServerConfig,
 ): Promise<OAuthClientProvider | undefined> => {
   // Ensure scopes are pre-populated if dynamic registration already ran previously
-  await prepopulateScopesIfMissing(serverName, serverConfig);
+  const updatedServerConfig = await prepopulateScopesIfMissing(serverName, serverConfig);
 
   // Initialize OAuth for the server (performs registration if needed)
   // This ensures the client is registered before the SDK tries to use it
   try {
-    await initializeOAuthForServer(serverName, serverConfig);
+    await initializeOAuthForServer(serverName, updatedServerConfig);
   } catch (error) {
     console.warn(`Failed to initialize OAuth for server ${serverName}:`, error);
     // Continue anyway - the SDK might be able to handle it
   }
 
   // Create and return the provider
-  const provider = new MCPHubOAuthProvider(serverName, serverConfig);
+  const provider = new MCPHubOAuthProvider(serverName, updatedServerConfig);
 
   console.log(`Created OAuth provider for server: ${serverName}`);
   return provider;
