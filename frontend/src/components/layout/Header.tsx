@@ -34,17 +34,11 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
 
         {/* Right side controls - responsive */}
         <div className="flex items-center space-x-0.5 sm:space-x-1 flex-shrink-0">
-          <span className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mr-1 sm:mr-2 hidden xs:inline">
-            {import.meta.env.PACKAGE_VERSION === 'dev'
-              ? import.meta.env.PACKAGE_VERSION
-              : `v${import.meta.env.PACKAGE_VERSION}`}
-          </span>
-
           <a
             href="https://github.com/samanhappy/mcphub"
             target="_blank"
             rel="noopener noreferrer"
-            className="p-1.5 sm:p-2 rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+            className="p-1.5 sm:p-2 rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
             aria-label="GitHub Repository"
           >
             <GitHubIcon className="h-4 w-4 sm:h-5 sm:w-5" />

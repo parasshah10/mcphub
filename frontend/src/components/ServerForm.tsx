@@ -1010,7 +1010,7 @@ const ServerForm = ({
                         autoComplete="off"
                       />
                     </div>
-                    {/* 
+                    
                     <div>
                       <label className="block text-xs text-gray-600 mb-1">
                         {t('server.oauth.authorizationEndpoint')}
@@ -1087,7 +1087,7 @@ const ServerForm = ({
                         autoComplete="off"
                       />
                     </div>
-                    */}
+                    
                   </div>
                 </div>
               )}
