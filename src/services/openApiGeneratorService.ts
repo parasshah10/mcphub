@@ -48,18 +48,37 @@ function convertToolSchemaToOpenAPI(tool: Tool): {
     if (!hasComplexTypes && Object.keys(properties).length <= 10) {
       // Use query parameters for simple tools
       const parameters: OpenAPIV3.ParameterObject[] = Object.entries(properties).map(
-        ([name, prop]: [string, any]) => ({
-          name,
-          in: 'query',
-          required: required.includes(name),
-          description: prop.description || `Parameter ${name}`,
-          schema: {
-            type: prop.type || 'string',
-            ...(prop.enum && { enum: prop.enum }),
-            ...(prop.default !== undefined && { default: prop.default }),
-            ...(prop.format && { format: prop.format }),
-          },
-        }),
+        ([name, prop]: [string, any]) => {
+          let type = prop.type || 'string';
+          let isNullable = false;
+
+          // Handle anyOf for nullable types (e.g., anyOf: [{type: "string"}, {type: "null"}])
+          if (!prop.type && Array.isArray(prop.anyOf)) {
+            const nonNullTypes = prop.anyOf.filter((t: any) => t.type !== 'null');
+            const hasNull = prop.anyOf.some((t: any) => t.type === 'null');
+
+            if (nonNullTypes.length > 0) {
+              type = nonNullTypes[0].type || 'string';
+            }
+            if (hasNull) {
+              isNullable = true;
+            }
+          }
+
+          return {
+            name,
+            in: 'query',
+            required: required.includes(name),
+            description: prop.description || `Parameter ${name}`,
+            schema: {
+              type,
+              ...(isNullable && { nullable: true }),
+              ...(prop.enum && { enum: prop.enum }),
+              ...(prop.default !== undefined && { default: prop.default }),
+              ...(prop.format && { format: prop.format }),
+            },
+          };
+        },
       );
 
       return { parameters };
