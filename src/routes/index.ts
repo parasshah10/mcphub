@@ -74,10 +74,12 @@ import { uploadDxtFile, uploadMiddleware } from '../controllers/dxtController.js
 import { healthCheck } from '../controllers/healthController.js';
 import {
   getOpenAPISpec,
+  getOpenAPISpecYaml,
   getOpenAPIServers,
   getOpenAPIStats,
   executeToolViaOpenAPI,
   getGroupOpenAPISpec,
+  getGroupOpenAPISpecYaml,
 } from '../controllers/openApiController.js';
 import { handleOAuthCallback } from '../controllers/oauthCallbackController.js';
 import { auth } from '../middlewares/auth.js';
@@ -210,7 +212,9 @@ export const initRoutes = (app: express.Application): void => {
 
   // OpenAPI generation endpoints
   app.get(`${config.basePath}/api/openapi.json`, getOpenAPISpec);
+  app.get(`${config.basePath}/api/openapi.yaml`, getOpenAPISpecYaml);
   app.get(`${config.basePath}/api/:name/openapi.json`, getGroupOpenAPISpec);
+  app.get(`${config.basePath}/api/:name/openapi.yaml`, getGroupOpenAPISpecYaml);
   app.get(`${config.basePath}/api/openapi/servers`, getOpenAPIServers);
   app.get(`${config.basePath}/api/openapi/stats`, getOpenAPIStats);
 

@@ -21,9 +21,11 @@ export const errorHandler = (
 // This provides a more precise and secure way to define public endpoints.
 const publicApiPaths = [
   /^\/auth\/login$/, // User login
-  /^\/openapi\.json$/, // Global OpenAPI spec
+  /^\/openapi\.json$/, // Global OpenAPI spec (JSON)
+  /^\/openapi\.yaml$/, // Global OpenAPI spec (YAML)
   /^\/openapi\/(servers|stats)$/, // OpenAPI server list and stats
   /^\/[^/]+\/openapi\.json$/, // Server/group-specific OpenAPI spec (e.g., /calculator/openapi.json)
+  /^\/[^/]+\/openapi\.yaml$/, // Server/group-specific OpenAPI spec (e.g., /calculator/openapi.yaml)
   /^\/tools\//, // Global tool execution
   /^\/[^/]+\/tools\//, // Server/group-scoped tool execution (e.g., /calculator/tools/...)
 ];
