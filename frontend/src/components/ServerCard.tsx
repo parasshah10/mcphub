@@ -369,16 +369,26 @@ const ServerCard = ({
     <>
       <div className="bg-white dark:bg-gray-800 shadow rounded-lg mb-6 page-card transition-all duration-200">
         <div
-          className="flex justify-between items-center p-4"
+          className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 gap-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+          onClick={() => {
+            if (expandedTab) {
+              setExpandedTab(null);
+            } else {
+              if (totalTools > 0) setExpandedTab('tools');
+              else if (totalPrompts > 0) setExpandedTab('prompts');
+              else if (totalResources > 0) setExpandedTab('resources');
+              else setExpandedTab('tools');
+            }
+          }}
         >
-          <div className="flex items-center space-x-2">
+          <div className="flex flex-wrap items-center gap-2">
             <h2
               className={`text-xl font-semibold ${server.enabled === false ? 'text-gray-600' : 'text-gray-900'}`}
             >
               {server.name}
             </h2>
             {server.config?.description && (
-              <span className="text-sm text-gray-500">({server.config.description})</span>
+              <span className="text-sm text-gray-500 hidden sm:inline">({server.config.description})</span>
             )}
             <StatusBadge status={server.status} onAuthClick={handleOAuthAuthorization} />
 
@@ -582,7 +592,20 @@ const ServerCard = ({
               <Trash2 size={14} className="sm:mr-1.5" />
               <span className="hidden sm:inline">{t('server.delete')}</span>
             </button>
-            <button className="p-1 text-gray-400 hover:text-gray-600 btn-secondary">
+            <button 
+              className="p-1 text-gray-400 hover:text-gray-600 btn-secondary"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (expandedTab) {
+                  setExpandedTab(null);
+                } else {
+                  if (totalTools > 0) setExpandedTab('tools');
+                  else if (totalPrompts > 0) setExpandedTab('prompts');
+                  else if (totalResources > 0) setExpandedTab('resources');
+                  else setExpandedTab('tools');
+                }
+              }}
+            >
               {expandedTab ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
             </button>
           </div>

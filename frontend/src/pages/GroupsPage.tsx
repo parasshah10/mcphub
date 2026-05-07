@@ -70,13 +70,15 @@ const GroupsPage: React.FC = () => {
   };
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">{t('pages.groups.title')}</h1>
-        <div className="flex space-x-4">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
+          {t('pages.groups.title')}
+        </h1>
+        <div className="grid grid-cols-2 sm:flex flex-wrap gap-2 sm:gap-4">
           <button
             onClick={handleAddGroup}
-            className="px-4 py-2 bg-blue-100 text-blue-800 rounded hover:bg-blue-200 flex items-center btn-primary transition-all duration-200"
+            className="px-3 sm:px-4 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400 rounded hover:bg-blue-200 dark:hover:bg-blue-800/40 flex items-center justify-center text-sm btn-primary transition-all duration-200"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -94,7 +96,7 @@ const GroupsPage: React.FC = () => {
           </button>
           <button
             onClick={() => setShowImportForm(true)}
-            className="px-4 py-2 bg-blue-100 text-blue-800 rounded hover:bg-blue-200 flex items-center btn-primary transition-all duration-200"
+            className="px-3 sm:px-4 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400 rounded hover:bg-blue-200 dark:hover:bg-blue-800/40 flex items-center justify-center text-sm btn-primary transition-all duration-200"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -112,7 +114,7 @@ const GroupsPage: React.FC = () => {
           </button>
           <button
             onClick={() => setShowTemplateExport(true)}
-            className="px-4 py-2 bg-green-100 text-green-800 rounded hover:bg-green-200 flex items-center btn-primary transition-all duration-200"
+            className="px-3 sm:px-4 py-2 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400 rounded hover:bg-green-200 dark:hover:bg-green-800/40 flex items-center justify-center text-sm btn-primary transition-all duration-200"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -130,7 +132,7 @@ const GroupsPage: React.FC = () => {
           </button>
           <button
             onClick={() => setShowTemplateImport(true)}
-            className="px-4 py-2 bg-green-100 text-green-800 rounded hover:bg-green-200 flex items-center btn-primary transition-all duration-200"
+            className="px-3 sm:px-4 py-2 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400 rounded hover:bg-green-200 dark:hover:bg-green-800/40 flex items-center justify-center text-sm btn-primary transition-all duration-200"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"

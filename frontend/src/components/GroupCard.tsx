@@ -141,12 +141,12 @@ const GroupCard = ({ group, servers, onEdit, onDelete, onViewEndpoints }: GroupC
   const groupServers = servers.filter((server) => serverNames.includes(server.name));
 
   return (
-    <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-4">
-      <div className="flex justify-between items-center">
+    <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-4 sm:p-6 mb-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
         <div>
-          <div className="flex items-center">
+          <div className="flex flex-wrap items-center gap-2">
             <h2 className="text-xl font-semibold text-gray-800">{group.name}</h2>
-            <div className="flex items-center ml-3">
+            <div className="flex items-center">
               <span className="text-xs text-gray-500 mr-1">{group.id}</span>
               <div className="relative" ref={dropdownRef}>
                 <button
@@ -188,27 +188,27 @@ const GroupCard = ({ group, servers, onEdit, onDelete, onViewEndpoints }: GroupC
           </div>
           {group.description && <p className="text-gray-600 text-sm mt-1">{group.description}</p>}
         </div>
-        <div className="flex items-center space-x-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           <div className="bg-blue-50 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 px-3 py-1 rounded-full text-sm btn-secondary">
             {t('groups.serverCount', { count: group.servers.length })}
           </div>
           <button
             onClick={handleViewEndpoints}
-            className="text-gray-500 hover:text-blue-600"
+            className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
             title={t('endpoints.view') || 'View Endpoints'}
           >
             <Link size={18} />
           </button>
           <button
             onClick={handleEdit}
-            className="text-gray-500 hover:text-gray-700"
+            className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
             title={t('groups.edit')}
           >
             <Edit size={18} />
           </button>
           <button
             onClick={handleDelete}
-            className="text-gray-500 hover:text-red-600"
+            className="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
             title={t('groups.delete')}
           >
             <Trash size={18} />
@@ -299,43 +299,50 @@ const GroupCard = ({ group, servers, onEdit, onDelete, onViewEndpoints }: GroupC
               };
 
               return (
-                <div key={server.name} className="relative">
+                <div key={server.name} className="relative w-full sm:w-auto">
                   <div
-                    className="flex items-center space-x-2 bg-gray-50 dark:bg-gray-800 rounded-lg px-3 py-2 cursor-pointer hover:bg-gray-100 transition-colors"
+                    className="flex items-center justify-between sm:justify-start space-x-2 bg-gray-50 dark:bg-gray-800 rounded-lg px-3 py-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors w-full"
                     onClick={handleServerClick}
                   >
-                    <span className="font-medium text-gray-700 text-sm">{server.name}</span>
-                    <span
-                      className={`inline-block h-2 w-2 rounded-full ${
-                        server.status === 'connected'
-                          ? 'bg-green-500'
-                          : server.status === 'connecting'
-                            ? 'bg-yellow-500'
-                            : 'bg-red-500'
-                      }`}
-                    ></span>
-                    {toolCount > 0 && (
-                      <span className="text-xs text-blue-600 bg-blue-100 dark:bg-blue-900/40 dark:text-blue-300 px-2 py-0.5 rounded flex items-center gap-1">
-                        <Wrench size={12} />
-                        {toolCount}
-                      </span>
-                    )}
-                    {promptCount > 0 && (
-                      <span className="text-xs text-purple-600 bg-purple-100 dark:bg-purple-900/40 dark:text-purple-300 px-2 py-0.5 rounded flex items-center gap-1">
-                        <MessageSquare size={12} />
-                        {promptCount}
-                      </span>
-                    )}
-                    {resourceCount > 0 && (
-                      <span className="text-xs text-emerald-600 bg-emerald-100 dark:bg-emerald-900/40 dark:text-emerald-300 px-2 py-0.5 rounded flex items-center gap-1">
-                        <FileText size={12} />
-                        {resourceCount}
-                      </span>
-                    )}
+                    <div className="flex items-center space-x-2 min-w-0">
+                      <span className="font-medium text-gray-700 dark:text-gray-300 text-sm truncate">{server.name}</span>
+                      <span
+                        className={`flex-shrink-0 inline-block h-2 w-2 rounded-full ${
+                          server.status === 'connected'
+                            ? 'bg-green-500'
+                            : server.status === 'connecting'
+                              ? 'bg-yellow-500'
+                              : 'bg-red-500'
+                        }`}
+                      ></span>
+                    </div>
+                    <div className="flex items-center space-x-1 ml-2">
+                      {toolCount > 0 && (
+                        <span className="text-[10px] sm:text-xs text-blue-600 bg-blue-100 dark:bg-blue-900/40 dark:text-blue-300 px-1.5 sm:px-2 py-0.5 rounded flex items-center gap-0.5 sm:gap-1">
+                          <Wrench size={10} />
+                          {toolCount}
+                        </span>
+                      )}
+                      {promptCount > 0 && (
+                        <span className="text-[10px] sm:text-xs text-purple-600 bg-purple-100 dark:bg-purple-900/40 dark:text-purple-300 px-1.5 sm:px-2 py-0.5 rounded flex items-center gap-0.5 sm:gap-1">
+                          <MessageSquare size={10} />
+                          {promptCount}
+                        </span>
+                      )}
+                      {resourceCount > 0 && (
+                        <span className="text-[10px] sm:text-xs text-emerald-600 bg-emerald-100 dark:bg-emerald-900/40 dark:text-emerald-300 px-1.5 sm:px-2 py-0.5 rounded flex items-center gap-0.5 sm:gap-1">
+                          <FileText size={10} />
+                          {resourceCount}
+                        </span>
+                      )}
+                      <div className="text-gray-400 ml-1">
+                        {isExpanded ? <DropdownIcon size={14} /> : <ChevronRight size={14} />}
+                      </div>
+                    </div>
                   </div>
 
                   {isExpanded && (
-                    <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 shadow-lg rounded-md border border-gray-200 dark:border-gray-700 p-3 z-10 min-w-[300px] max-w-[400px]">
+                    <div className="absolute top-full left-0 mt-1 bg-white dark:bg-gray-800 shadow-lg rounded-md border border-gray-200 dark:border-gray-700 p-3 z-20 min-w-[200px] sm:min-w-[300px] max-w-[calc(100vw-2rem)] sm:max-w-[400px]">
                       <div className="space-y-3">
                         {toolCount > 0 && (
                           <div>
