@@ -20,6 +20,58 @@ export interface OpenAPIGenerationOptions {
 }
 
 /**
+ * Convert an individual property schema to OpenAPI format
+ * This handles nullable types (anyOf with null) for strict parser compatibility
+ */
+function convertPropertySchema(prop: any): any {
+  if (!prop || typeof prop !== 'object') {
+    return { type: 'string' };
+  }
+
+  // Handle nullable types (anyOf with null)
+  // Some MCP servers (like Supabase) use anyOf: [{type: 'string'}, {type: 'null'}]
+  if (Array.isArray(prop.anyOf)) {
+    const hasNull = prop.anyOf.some((p: any) => p.type === 'null');
+    if (hasNull) {
+      const nonNullType = prop.anyOf.find((p: any) => p.type !== 'null');
+      if (nonNullType) {
+        return {
+          ...nonNullType,
+          nullable: true,
+        };
+      }
+    }
+  }
+
+  // Handle direct null type if it exists in an array of types
+  if (Array.isArray(prop.type) && prop.type.includes('null')) {
+    const types = prop.type.filter((t: string) => t !== 'null');
+    return {
+      type: types.length === 1 ? types[0] : types,
+      nullable: true,
+      ...(prop.enum && { enum: prop.enum }),
+      ...(prop.default !== undefined && { default: prop.default }),
+      ...(prop.format && { format: prop.format }),
+    };
+  }
+
+  // Standard conversion
+  return {
+    type: prop.type || 'string',
+    ...(prop.enum && { enum: prop.enum }),
+    ...(prop.default !== undefined && { default: prop.default }),
+    ...(prop.format && { format: prop.format }),
+    ...(prop.items && { items: convertPropertySchema(prop.items) }),
+    ...(prop.properties && {
+      properties: Object.fromEntries(
+        Object.entries(prop.properties).map(([name, p]) => [name, convertPropertySchema(p)]),
+      ),
+    }),
+    ...(prop.required && { required: prop.required }),
+  };
+}
+
+/**
  * Convert MCP tool input schema to OpenAPI parameter or request body schema
  */
 function convertToolSchemaToOpenAPI(tool: Tool): {
@@ -42,7 +94,7 @@ function convertToolSchemaToOpenAPI(tool: Tool): {
       (prop: any) =>
         prop.type === 'object' ||
         prop.type === 'array' ||
-        prop.type === 'string',
+        (Array.isArray(prop.type) && (prop.type.includes('object') || prop.type.includes('array'))),
     );
 
     if (!hasComplexTypes && Object.keys(properties).length <= 10) {
@@ -53,12 +105,7 @@ function convertToolSchemaToOpenAPI(tool: Tool): {
           in: 'query',
           required: required.includes(name),
           description: prop.description || `Parameter ${name}`,
-          schema: {
-            type: prop.type || 'string',
-            ...(prop.enum && { enum: prop.enum }),
-            ...(prop.default !== undefined && { default: prop.default }),
-            ...(prop.format && { format: prop.format }),
-          },
+          schema: convertPropertySchema(prop),
         }),
       );
 
@@ -71,7 +118,12 @@ function convertToolSchemaToOpenAPI(tool: Tool): {
           'application/json': {
             schema: {
               type: 'object',
-              properties,
+              properties: Object.fromEntries(
+                Object.entries(properties).map(([name, prop]) => [
+                  name,
+                  convertPropertySchema(prop),
+                ]),
+              ),
               ...(required.length > 0 && { required }),
             },
           },
@@ -90,10 +142,15 @@ function convertToolSchemaToOpenAPI(tool: Tool): {
  */
 function generateOperationFromTool(tool: Tool, serverName: string): OpenAPIV3.OperationObject {
   const { parameters, requestBody } = convertToolSchemaToOpenAPI(tool);
+  // Smartly generate operationId to avoid duplication like "Server_Server-tool"
+  const operationId = tool.name.startsWith(`${serverName}-`)
+    ? tool.name.replace('-', '_') // Replace only the first hyphen for a clean ID like "Arctic_calculator::add"
+    : `${serverName}_${tool.name}`; // Fallback for safety if tool name isn't prefixed
+  
   const operation: OpenAPIV3.OperationObject = {
     summary: tool.description || `Execute ${tool.name} tool`,
     description: tool.description || `Execute the ${tool.name} tool from ${serverName} server`,
-    operationId: `${tool.name}`,
+    operationId: operationId,
     tags: [serverName],
     ...(parameters && parameters.length > 0 && { parameters }),
     ...(requestBody && { requestBody }),

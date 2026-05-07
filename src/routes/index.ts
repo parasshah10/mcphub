@@ -99,10 +99,14 @@ import { healthCheck } from '../controllers/healthController.js';
 import { getBetterAuthUser } from '../controllers/betterAuthController.js';
 import {
   getOpenAPISpec,
+  getOpenAPISpecYaml,
   getOpenAPIServers,
   getOpenAPIStats,
   executeToolViaOpenAPI,
+  getServerOpenAPISpec,
+  getServerOpenAPISpecYaml,
   getGroupOpenAPISpec,
+  getGroupOpenAPISpecYaml,
 } from '../controllers/openApiController.js';
 import { handleOAuthCallback } from '../controllers/oauthCallbackController.js';
 import {
@@ -400,7 +404,9 @@ export const initRoutes = async (app: express.Application): Promise<void> => {
 
   // OpenAPI generation endpoints
   app.get(`${config.basePath}/api/openapi.json`, getOpenAPISpec);
+  app.get(`${config.basePath}/api/openapi.yaml`, getOpenAPISpecYaml);
   app.get(`${config.basePath}/api/:name/openapi.json`, getGroupOpenAPISpec);
+  app.get(`${config.basePath}/api/:name/openapi.yaml`, getGroupOpenAPISpecYaml);
   app.get(`${config.basePath}/api/openapi/servers`, getOpenAPIServers);
   app.get(`${config.basePath}/api/openapi/stats`, getOpenAPIStats);
 

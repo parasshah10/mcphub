@@ -6,6 +6,7 @@ import { useServerData } from '@/hooks/useServerData';
 import AddGroupForm from '@/components/AddGroupForm';
 import EditGroupForm from '@/components/EditGroupForm';
 import GroupCard from '@/components/GroupCard';
+import EndpointsModal from '@/components/EndpointsModal';
 import GroupImportForm from '@/components/GroupImportForm';
 import TemplateExportForm from '@/components/TemplateExportForm';
 import TemplateImportForm from '@/components/TemplateImportForm';
@@ -23,6 +24,7 @@ const GroupsPage: React.FC = () => {
   const { allServers } = useServerData({ refreshOnMount: true });
 
   const [editingGroup, setEditingGroup] = useState<Group | null>(null);
+  const [viewingEndpointsGroup, setViewingEndpointsGroup] = useState<Group | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [showImportForm, setShowImportForm] = useState(false);
   const [showTemplateExport, setShowTemplateExport] = useState(false);
@@ -35,6 +37,10 @@ const GroupsPage: React.FC = () => {
   const handleEditComplete = () => {
     setEditingGroup(null);
     triggerRefresh(); // Refresh the groups list after editing
+  };
+
+  const handleViewEndpoints = (group: Group) => {
+    setViewingEndpointsGroup(group);
   };
 
   const handleDeleteGroup = async (groupId: string) => {
@@ -188,6 +194,7 @@ const GroupsPage: React.FC = () => {
               servers={allServers}
               onEdit={handleEditClick}
               onDelete={handleDeleteGroup}
+              onViewEndpoints={handleViewEndpoints}
             />
           ))}
         </div>
@@ -210,7 +217,17 @@ const GroupsPage: React.FC = () => {
         />
       )}
 
-      {showTemplateExport && (
+      {viewingEndpointsGroup && (
+        <EndpointsModal
+          isOpen={true}
+          onClose={() => setViewingEndpointsGroup(null)}
+          type="group"
+          name={viewingEndpointsGroup.id}
+          title={`${t('endpoints.title') || 'API Endpoints'}: ${viewingEndpointsGroup.name}`}
+        />
+      )}
+
+      {showImportForm && (
         <TemplateExportForm
           groups={groups}
           onCancel={() => setShowTemplateExport(false)}

@@ -20,6 +20,19 @@ export const errorHandler = (
   });
 };
 
+// An array of regular expressions for public API paths that do not require authentication.
+// This provides a more precise and secure way to define public endpoints.
+const publicApiPaths = [
+  /^\/auth\/login$/, // User login
+  /^\/auth\/better/, // Better-auth endpoints
+  /^\/better-auth/, // Better-auth endpoints
+  /^\/openapi\.(json|yaml)$/, // Global OpenAPI spec
+  /^\/openapi\/(servers|stats)$/, // OpenAPI server list and stats
+  /^\/[^/]+\/openapi\.(json|yaml)$/, // Server/group-specific OpenAPI spec (e.g., /calculator/openapi.json)
+  /^\/tools\//, // Global tool execution
+  /^\/[^/]+\/tools\//, // Server/group-scoped tool execution (e.g., /calculator/tools/...)
+];
+
 export const initMiddlewares = (app: express.Application): void => {
   // Apply i18n middleware first to detect language for all requests
   app.use(i18nMiddleware);
@@ -56,18 +69,15 @@ export const initMiddlewares = (app: express.Application): void => {
     }
   });
 
-  // Protect API routes with authentication middleware, but exclude auth endpoints
-  app.use(`${config.basePath}/api`, (req, res, next) => {
-    // Skip authentication for login endpoint
-    if (
-      req.path === '/auth/login' ||
-      req.path.startsWith('/auth/better') ||
-      req.path.startsWith('/better-auth')
-    ) {
+  // Protect API routes with authentication middleware, but exclude public endpoints
+  app.use(`${config.basePath}/api`, (req: Request, res: Response, next: NextFunction) => {
+    const isPublicPath = publicApiPaths.some((pattern) => pattern.test(req.path));
+
+    if (isPublicPath) {
       next();
     } else {
       // Apply authentication middleware first
-      auth(req, res, (err) => {
+      auth(req, res, (err: any) => {
         if (err) {
           next(err);
         } else {

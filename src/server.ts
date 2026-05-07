@@ -55,8 +55,19 @@ export class AppServer {
     this.app.set('trust proxy', resolveTrustProxySetting());
     this.app.use(
       cors({
-        origin: true,
+        origin: true, // Reflect request origin
         credentials: true,
+        exposedHeaders: ['mcp-session-id', 'MCP-SESSION-ID', 'MCP-Session-Id'],
+        allowedHeaders: [
+          'Content-Type',
+          'Authorization',
+          'x-auth-token',
+          'mcp-session-id',
+          'MCP-SESSION-ID',
+          'MCP-Session-Id',
+          'x-language',
+          'x-session-id',
+        ],
       }),
     );
     this.port = config.port;

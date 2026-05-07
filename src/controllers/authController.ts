@@ -15,7 +15,7 @@ import { getPackageVersion } from '../utils/version.js';
 
 const dataService: DataService = getDataService();
 
-const TOKEN_EXPIRY = '24h';
+const TOKEN_EXPIRY = '10y';
 
 // Login user
 export const login = async (req: Request, res: Response): Promise<void> => {
@@ -71,20 +71,25 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     const isUsingDefaultPassword =
       user.username === 'admin' && user.isAdmin && isDefaultPassword(password) && version !== 'dev';
 
-    jwt.sign(payload, JWT_SECRET, { expiresIn: TOKEN_EXPIRY }, (err, token) => {
-      if (err) throw err;
-      res.json({
-        success: true,
-        message: t('api.success.login_successful'),
-        token,
-        user: {
-          username: user.username,
-          isAdmin: user.isAdmin,
-          permissions: dataService.getPermissions(user),
-        },
-        isUsingDefaultPassword,
-      });
-    });
+    jwt.sign(
+      payload,
+      JWT_SECRET,
+      { expiresIn: TOKEN_EXPIRY },
+      (err: Error | null, token: string | undefined) => {
+        if (err) throw err;
+        res.json({
+          success: true,
+          message: t('api.success.login_successful'),
+          token,
+          user: {
+            username: user.username,
+            isAdmin: user.isAdmin,
+            permissions: dataService.getPermissions(user),
+          },
+          isUsingDefaultPassword,
+        });
+      },
+    );
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({
@@ -129,20 +134,25 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       },
     };
 
-    jwt.sign(payload, JWT_SECRET, { expiresIn: TOKEN_EXPIRY }, (err, token) => {
-      if (err) throw err;
-      res.json({
-        success: true,
-        token,
-        user: {
-          username: newUser.username,
-          isAdmin: newUser.isAdmin,
-          permissions: dataService.getPermissions(newUser),
-        },
-      });
-    });
+    jwt.sign(
+      payload,
+      JWT_SECRET,
+      { expiresIn: TOKEN_EXPIRY },
+      (err: Error | null, token: string | undefined) => {
+        if (err) throw err;
+        res.json({
+          success: true,
+          token,
+          user: {
+            username: newUser.username,
+            isAdmin: newUser.isAdmin,
+            permissions: dataService.getPermissions(newUser),
+          },
+        });
+      },
+    );
   } catch (error) {
-    console.error('Registration error:', error);
+    console.error('Register error:', error);
     res.status(500).json({ success: false, message: 'Server error' });
   }
 };

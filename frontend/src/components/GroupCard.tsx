@@ -22,9 +22,10 @@ interface GroupCardProps {
   servers: Server[];
   onEdit: (group: Group) => void;
   onDelete: (groupId: string) => void;
+  onViewEndpoints: (group: Group) => void;
 }
 
-const GroupCard = ({ group, servers, onEdit, onDelete }: GroupCardProps) => {
+const GroupCard = ({ group, servers, onEdit, onDelete, onViewEndpoints }: GroupCardProps) => {
   const { t } = useTranslation();
   const { showToast } = useToast();
   const { installConfig, nameSeparator } = useSettingsData();
@@ -54,6 +55,10 @@ const GroupCard = ({ group, servers, onEdit, onDelete }: GroupCardProps) => {
 
   const handleDelete = () => {
     setShowDeleteDialog(true);
+  };
+
+  const handleViewEndpoints = () => {
+    onViewEndpoints(group);
   };
 
   const handleConfirmDelete = () => {
@@ -187,6 +192,13 @@ const GroupCard = ({ group, servers, onEdit, onDelete }: GroupCardProps) => {
           <div className="bg-blue-50 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 px-3 py-1 rounded-full text-sm btn-secondary">
             {t('groups.serverCount', { count: group.servers.length })}
           </div>
+          <button
+            onClick={handleViewEndpoints}
+            className="text-gray-500 hover:text-blue-600"
+            title={t('endpoints.view') || 'View Endpoints'}
+          >
+            <Link size={18} />
+          </button>
           <button
             onClick={handleEdit}
             className="text-gray-500 hover:text-gray-700"

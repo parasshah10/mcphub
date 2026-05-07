@@ -1,23 +1,37 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import ServerForm from './ServerForm'
 import { apiPost } from '../utils/fetchInterceptor'
 import { detectVariables } from '../utils/variableDetection'
+import { Server } from '../types'
 
 interface AddServerFormProps {
   onAdd: () => void
+  isOpen?: boolean
+  onCancel?: () => void
+  initialData?: Server | null
 }
 
-const AddServerForm = ({ onAdd }: AddServerFormProps) => {
+const AddServerForm = ({ onAdd, isOpen: propIsOpen, onCancel, initialData = null }: AddServerFormProps) => {
   const { t } = useTranslation()
-  const [modalVisible, setModalVisible] = useState(false)
+  const [modalVisible, setModalVisible] = useState(propIsOpen || false)
   const [error, setError] = useState<string | null>(null)
   const [confirmationVisible, setConfirmationVisible] = useState(false)
   const [pendingPayload, setPendingPayload] = useState<any>(null)
   const [detectedVariables, setDetectedVariables] = useState<string[]>([])
 
+  useEffect(() => {
+    if (propIsOpen !== undefined) {
+      setModalVisible(propIsOpen);
+    }
+  }, [propIsOpen]);
+
   const toggleModal = () => {
-    setModalVisible(!modalVisible)
+    if (onCancel) {
+      onCancel();
+    } else {
+      setModalVisible(!modalVisible)
+    }
     setError(null) // Clear any previous errors when toggling modal
     setConfirmationVisible(false) // Close confirmation dialog
     setPendingPayload(null) // Clear pending payload
@@ -46,7 +60,11 @@ const AddServerForm = ({ onAdd }: AddServerFormProps) => {
         return
       }
 
-      setModalVisible(false)
+      if (onCancel) {
+        onCancel();
+      } else {
+        setModalVisible(false)
+      }
       onAdd()
     } catch (err) {
       console.error('Error adding server:', err)
@@ -85,8 +103,8 @@ const AddServerForm = ({ onAdd }: AddServerFormProps) => {
     }
   }
 
-  return (
-    <div>
+  if (!modalVisible) {
+    return (
       <button
         onClick={toggleModal}
         className="w-full bg-blue-100 text-blue-800 rounded hover:bg-blue-200 py-2 px-4 flex items-center justify-center btn-primary"
@@ -96,28 +114,45 @@ const AddServerForm = ({ onAdd }: AddServerFormProps) => {
         </svg>
         {t('server.add')}
       </button>
+    );
+  }
 
-      {modalVisible && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col relative">
+        <div className="absolute top-4 right-4 z-10">
+          <button
+            onClick={toggleModal}
+            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        
+        <div className="flex-1 overflow-y-auto">
           <ServerForm
             onSubmit={handleSubmit}
             onCancel={toggleModal}
-            modalTitle={t('server.addServer')}
+            initialData={initialData}
+            modalTitle={initialData ? t('server.cloneServer') : t('server.addServer')}
             formError={error}
+            mode={initialData ? 'clone' : 'add'}
           />
         </div>
-      )}
+      </div>
 
       {confirmationVisible && (
         <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4">
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
               {t('server.confirmVariables')}
             </h3>
-            <p className="text-gray-600 mb-4">
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
               {t('server.variablesDetected')}
             </p>
-            <div className="bg-yellow-50 border border-yellow-200 rounded p-3 mb-4">
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-900/30 rounded p-3 mb-4">
               <div className="flex items-start">
                 <div className="flex-shrink-0">
                   <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
@@ -125,10 +160,10 @@ const AddServerForm = ({ onAdd }: AddServerFormProps) => {
                   </svg>
                 </div>
                 <div className="ml-3">
-                  <h4 className="text-sm font-medium text-yellow-800">
+                  <h4 className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
                     {t('server.detectedVariables')}:
                   </h4>
-                  <ul className="mt-1 text-sm text-yellow-700">
+                  <ul className="mt-1 text-sm text-yellow-700 dark:text-yellow-300">
                     {detectedVariables.map((variable, index) => (
                       <li key={index} className="font-mono">
                         ${`{${variable}}`}
@@ -138,7 +173,7 @@ const AddServerForm = ({ onAdd }: AddServerFormProps) => {
                 </div>
               </div>
             </div>
-            <p className="text-gray-600 text-sm mb-6">
+            <p className="text-gray-600 dark:text-gray-400 text-sm mb-6">
               {t('server.confirmVariablesMessage')}
             </p>
             <div className="flex justify-end space-x-3">

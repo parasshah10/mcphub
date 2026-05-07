@@ -9,6 +9,7 @@ interface ServerFormProps {
   initialData?: Server | null;
   modalTitle: string;
   formError?: string | null;
+  mode?: 'add' | 'edit' | 'clone';
 }
 
 const ServerForm = ({
@@ -17,6 +18,7 @@ const ServerForm = ({
   initialData = null,
   modalTitle,
   formError = null,
+  mode = 'add',
 }: ServerFormProps) => {
   const { t } = useTranslation();
 
@@ -158,7 +160,7 @@ const ServerForm = ({
   const [isOAuthSectionExpanded, setIsOAuthSectionExpanded] = useState<boolean>(false);
   const [isKeepAliveSectionExpanded, setIsKeepAliveSectionExpanded] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const isEdit = !!initialData;
+  const isEdit = mode === 'edit';
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -952,7 +954,6 @@ const ServerForm = ({
                         autoComplete="off"
                       />
                     </div>
-                    {/* 
                     <div>
                       <label className="block text-xs text-gray-600 mb-1">
                         {t('server.oauth.authorizationEndpoint')}
@@ -1029,7 +1030,6 @@ const ServerForm = ({
                         autoComplete="off"
                       />
                     </div>
-                    */}
                   </div>
                 </div>
               )}
@@ -1293,7 +1293,7 @@ const ServerForm = ({
             type="submit"
             className="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded btn-primary"
           >
-            {isEdit ? t('server.save') : t('server.add')}
+            {mode === 'edit' ? t('server.save') : t('server.add')}
           </button>
         </div>
       </form>

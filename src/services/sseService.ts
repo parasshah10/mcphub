@@ -625,55 +625,91 @@ export const handleMcpPostRequest = async (req: Request, res: Response): Promise
   let transport: StreamableHTTPServerTransport;
   let transportInfo: (typeof transports)[string] | undefined;
 
-  if (sessionId) {
-    transportInfo = transports[sessionId];
-  }
+  const requestContextService = RequestContextService.getInstance();
+  requestContextService.setRequestContext(req);
 
-  if (sessionId && transportInfo) {
-    // Case 1: Session exists and is valid, reuse it
-    console.log(
-      `[SESSION REUSE] Reusing existing session: ${sessionId}${username ? ` for user: ${username}` : ''}`,
-    );
-    transport = transportInfo.transport as StreamableHTTPServerTransport;
-  } else if (sessionId) {
-    // Case 2: SessionId exists but transport is missing (server restart), check if session rebuild is enabled
-    const enableSessionRebuild = systemConfig?.enableSessionRebuild || false;
+  try {
+    if (sessionId) {
+      transportInfo = transports[sessionId];
+    }
 
-    if (enableSessionRebuild) {
+    if (sessionId && transportInfo) {
+      // Case 1: Session exists and is valid, reuse it
       console.log(
-        `[SESSION AUTO-REBUILD] Session ${sessionId} not found, initiating transparent rebuild${username ? ` for user: ${username}` : ''}`,
+        `[SESSION REUSE] Reusing existing session: ${sessionId}${username ? ` for user: ${username}` : ''}`,
       );
-      // Prevent concurrent session creation
-      if (sessionCreationLocks[sessionId] !== undefined) {
+      transport = transportInfo.transport as StreamableHTTPServerTransport;
+    } else if (sessionId) {
+      // Case 2: SessionId exists but transport is missing (server restart), check if session rebuild is enabled
+      const enableSessionRebuild = systemConfig?.enableSessionRebuild || false;
+
+      if (enableSessionRebuild) {
         console.log(
-          `[SESSION AUTO-REBUILD] Session creation in progress for ${sessionId}, waiting...`,
+          `[SESSION AUTO-REBUILD] Session ${sessionId} not found, initiating transparent rebuild${username ? ` for user: ${username}` : ''}`,
         );
-        transport = await sessionCreationLocks[sessionId];
-      } else {
-        sessionCreationLocks[sessionId] = createSessionWithId(sessionId, group, username);
-        try {
-          transport = await sessionCreationLocks[sessionId];
+        // Prevent concurrent session creation
+        if (sessionCreationLocks[sessionId] !== undefined) {
           console.log(
-            `[SESSION AUTO-REBUILD] Successfully transparently rebuilt session: ${sessionId}`,
+            `[SESSION AUTO-REBUILD] Session creation in progress for ${sessionId}, waiting...`,
           );
-        } catch (error) {
-          console.error('[SESSION AUTO-REBUILD] Failed to rebuild session', {
-            sessionId,
-            error,
-          });
-          throw error;
-        } finally {
-          delete sessionCreationLocks[sessionId];
+          transport = await sessionCreationLocks[sessionId];
+        } else {
+          sessionCreationLocks[sessionId] = createSessionWithId(sessionId, group, username);
+          try {
+            transport = await sessionCreationLocks[sessionId];
+            console.log(
+              `[SESSION AUTO-REBUILD] Successfully transparently rebuilt session: ${sessionId}`,
+            );
+          } catch (error) {
+            console.error('[SESSION AUTO-REBUILD] Failed to rebuild session', {
+              sessionId,
+              error,
+            });
+            throw error;
+          } finally {
+            delete sessionCreationLocks[sessionId];
+          }
         }
+        // Get the updated transport info after rebuild
+        if (sessionId) {
+          transportInfo = transports[sessionId];
+        }
+      } else {
+        // Session rebuild is disabled, return error
+        console.warn(
+          `[SESSION ERROR] Session ${sessionId} not found and session rebuild is disabled${username ? ` for user: ${username}` : ''}`,
+        );
+        res.status(400).json({
+          jsonrpc: '2.0',
+          error: {
+            code: -32000,
+            message: 'Bad Request: No valid session ID provided',
+          },
+          id: null,
+        });
+        return;
       }
-      // Get the updated transport info after rebuild
-      if (sessionId) {
-        transportInfo = transports[sessionId];
-      }
+    } else if (isInitializeRequest(req.body)) {
+      // Case 3: No sessionId and this is an initialize request, create new session
+      console.log(
+        `[SESSION CREATE] No session ID provided for initialize request, creating new session${username ? ` for user: ${username}` : ''}`,
+      );
+      transport = await createNewSession(group, username);
+    } else if (
+      req.body &&
+      typeof req.body.method === 'string' &&
+      req.body.method.startsWith('notifications/')
+    ) {
+      // Case 4: Session-less notification requests should be acknowledged and ignored
+      console.log(
+        `[SESSION SKIP] Ignoring session-less notification request (method: ${req.body.method})${username ? ` for user: ${username}` : ''}`,
+      );
+      res.status(200).end();
+      return;
     } else {
-      // Session rebuild is disabled, return error
+      // Case 5: No sessionId and not an initialize/notification request, return error
       console.warn(
-        `[SESSION ERROR] Session ${sessionId} not found and session rebuild is disabled${username ? ` for user: ${username}` : ''}`,
+        `[SESSION ERROR] No session ID provided for non-initialize request (method: ${req.body?.method})${username ? ` for user: ${username}` : ''}`,
       );
       res.status(400).json({
         jsonrpc: '2.0',
@@ -685,125 +721,32 @@ export const handleMcpPostRequest = async (req: Request, res: Response): Promise
       });
       return;
     }
-  } else if (isInitializeRequest(req.body)) {
-    // Case 3: No sessionId and this is an initialize request, create new session
-    console.log(
-      `[SESSION CREATE] No session ID provided for initialize request, creating new session${username ? ` for user: ${username}` : ''}`,
-    );
-    transport = await createNewSession(group, username);
-  } else if (
-    req.body &&
-    typeof req.body.method === 'string' &&
-    req.body.method.startsWith('notifications/')
-  ) {
-    // Case 4: Session-less notification requests should be acknowledged and ignored
-    console.log(
-      `[SESSION SKIP] Ignoring session-less notification request (method: ${req.body.method})${username ? ` for user: ${username}` : ''}`,
-    );
-    res.status(200).end();
-    return;
-  } else {
-    // Case 5: No sessionId and not an initialize/notification request, return error
-    console.warn(
-      `[SESSION ERROR] No session ID provided for non-initialize request (method: ${req.body?.method})${username ? ` for user: ${username}` : ''}`,
-    );
-    res.status(400).json({
-      jsonrpc: '2.0',
-      error: {
-        code: -32000,
-        message: 'Bad Request: No valid session ID provided',
-      },
-      id: null,
-    });
-    return;
-  }
 
-  console.log(`Handling request using transport with type ${transport.constructor.name}`);
+    console.log(`Handling request using transport with type ${transport.constructor.name}`);
 
-  const requestContextService = RequestContextService.getInstance();
-  await requestContextService.runWithRequestContext(req, async () => {
-    // Set bearer key and group context for activity logging
-    requestContextService.setBearerKeyContext(bearerAuthResult.keyId, bearerAuthResult.keyName);
-    requestContextService.setGroupContext(group);
+    await requestContextService.runWithRequestContext(req, async () => {
+      // Set bearer key and group context for activity logging
+      requestContextService.setBearerKeyContext(bearerAuthResult.keyId, bearerAuthResult.keyName);
+      requestContextService.setGroupContext(group);
 
-    // Check if the session needs initialization (for rebuilt sessions)
-    if (transportInfo && transportInfo.needsInitialization) {
-      console.log(
-        `[MCP] Session ${sessionId} needs initialization, performing proactive initialization`,
-      );
-
-      try {
-        // Create a mock response object that doesn't actually send headers
-        const mockRes = {
-          writeHead: () => {},
-          end: () => {},
-          json: () => {},
-          status: () => mockRes,
-          send: () => {},
-          headersSent: false,
-        } as any;
-
-        // First, send the initialize request
-        const initializeRequest = {
-          method: 'initialize',
-          params: {
-            protocolVersion: '2025-03-26',
-            capabilities: {},
-            clientInfo: {
-              name: 'MCPHub-Client',
-              version: '1.0.0',
-            },
-          },
-          jsonrpc: '2.0',
-          id: `init-${sessionId}-${Date.now()}`,
-        };
-
-        console.log(`[MCP] Sending initialize request for session ${sessionId}`);
-        // Use mock response to avoid sending actual HTTP response
-        await transport.handleRequest(req, mockRes, initializeRequest);
-
-        // Then send the initialized notification
-        const initializedNotification = {
-          method: 'notifications/initialized',
-          jsonrpc: '2.0',
-        };
-
-        console.log(`[MCP] Sending initialized notification for session ${sessionId}`);
-        await transport.handleRequest(req, mockRes, initializedNotification);
-
-        // Mark the session as initialized
-        transportInfo.needsInitialization = false;
-        console.log(`[MCP] Session ${sessionId} successfully initialized`);
-      } catch (initError) {
-        console.error('[MCP] Failed to initialize session', {
-          sessionId,
-          error: initError,
-        });
-        console.error('[MCP] Initialization error details', {
-          sessionId,
-          error: initError,
-        });
-        // Don't return here, continue with the original request
-      }
-    }
-
-    try {
-      await transport.handleRequest(req, res, req.body);
-    } catch (error: any) {
-      // Check if this is a "Server not initialized" error for a newly rebuilt session
-      if (sessionId && error.message && error.message.includes('Server not initialized')) {
+      // Check if the session needs initialization (for rebuilt sessions)
+      if (transportInfo && transportInfo.needsInitialization) {
         console.log(
-          `[SESSION AUTO-REBUILD] Server not initialized for ${sessionId}. Attempting to initialize with the current request.`,
+          `[MCP] Session ${sessionId} needs initialization, performing proactive initialization`,
         );
 
-        // Check if the current request is an 'initialize' request
-        if (isInitializeRequest(req.body)) {
-          // If it is, we can just retry it. The transport should now be in the transports map.
-          console.log(`[SESSION AUTO-REBUILD] Retrying initialize request for ${sessionId}.`);
-          await transport.handleRequest(req, res, req.body);
-        } else {
-          // If not, we need to send an initialize request first.
-          // We construct a mock initialize request, but use the REAL req/res objects.
+        try {
+          // Create a mock response object that doesn't actually send headers
+          const mockRes = {
+            writeHead: () => {},
+            end: () => {},
+            json: () => {},
+            status: () => mockRes,
+            send: () => {},
+            headersSent: false,
+          } as any;
+
+          // First, send the initialize request
           const initializeRequest = {
             method: 'initialize',
             params: {
@@ -818,44 +761,116 @@ export const handleMcpPostRequest = async (req: Request, res: Response): Promise
             id: `init-${sessionId}-${Date.now()}`,
           };
 
-          console.log(
-            `[SESSION AUTO-REBUILD] Sending initialize request for ${sessionId} before handling the actual request.`,
-          );
-          try {
-            // Temporarily replace the body to send the initialize request
-            const originalBody = req.body;
-            req.body = initializeRequest;
-            await transport.handleRequest(req, res, req.body);
+          console.log(`[MCP] Sending initialize request for session ${sessionId}`);
+          // Use mock response to avoid sending actual HTTP response
+          await transport.handleRequest(req, mockRes, initializeRequest);
 
-            // Now, send the notifications/initialized
-            const initializedNotification = {
-              method: 'notifications/initialized',
-              jsonrpc: '2.0',
-            };
-            req.body = initializedNotification;
-            await transport.handleRequest(req, res, req.body);
+          // Then send the initialized notification
+          const initializedNotification = {
+            method: 'notifications/initialized',
+            jsonrpc: '2.0',
+          };
 
-            // Restore the original body and retry the original request
-            req.body = originalBody;
-            console.log(
-              `[SESSION AUTO-REBUILD] Initialization complete for ${sessionId}. Retrying original request.`,
-            );
-            await transport.handleRequest(req, res, req.body);
-          } catch (initError) {
-            console.error('[SESSION AUTO-REBUILD] Failed to initialize session on-the-fly', {
-              sessionId,
-              error: initError,
-            });
-            // Re-throw the original error if initialization fails
-            throw error;
-          }
+          console.log(`[MCP] Sending initialized notification for session ${sessionId}`);
+          await transport.handleRequest(req, mockRes, initializedNotification);
+
+          // Mark the session as initialized
+          transportInfo.needsInitialization = false;
+          console.log(`[MCP] Session ${sessionId} successfully initialized`);
+        } catch (initError) {
+          console.error('[MCP] Failed to initialize session', {
+            sessionId,
+            error: initError,
+          });
+          console.error('[MCP] Initialization error details', {
+            sessionId,
+            error: initError,
+          });
+          // Don't return here, continue with the original request
         }
-      } else {
-        // If it's a different error, just re-throw it
-        throw error;
       }
+
+      try {
+        await transport.handleRequest(req, res, req.body);
+      } catch (error: any) {
+        // Check if this is a "Server not initialized" error for a newly rebuilt session
+        if (sessionId && error.message && error.message.includes('Server not initialized')) {
+          console.log(
+            `[SESSION AUTO-REBUILD] Server not initialized for ${sessionId}. Attempting to initialize with the current request.`,
+          );
+
+          // Check if the current request is an 'initialize' request
+          if (isInitializeRequest(req.body)) {
+            // If it is, we can just retry it. The transport should now be in the transports map.
+            console.log(`[SESSION AUTO-REBUILD] Retrying initialize request for ${sessionId}.`);
+            await transport.handleRequest(req, res, req.body);
+          } else {
+            // If not, we need to send an initialize request first.
+            // We construct a mock initialize request, but use the REAL req/res objects.
+            const initializeRequest = {
+              method: 'initialize',
+              params: {
+                protocolVersion: '2025-03-26',
+                capabilities: {},
+                clientInfo: {
+                  name: 'MCPHub-Client',
+                  version: '1.0.0',
+                },
+              },
+              jsonrpc: '2.0',
+              id: `init-${sessionId}-${Date.now()}`,
+            };
+
+            console.log(
+              `[SESSION AUTO-REBUILD] Sending initialize request for ${sessionId} before handling the actual request.`,
+            );
+            try {
+              // Temporarily replace the body to send the initialize request
+              const originalBody = req.body;
+              req.body = initializeRequest;
+              await transport.handleRequest(req, res, req.body);
+
+              // Now, send the notifications/initialized
+              const initializedNotification = {
+                method: 'notifications/initialized',
+                jsonrpc: '2.0',
+              };
+              req.body = initializedNotification;
+              await transport.handleRequest(req, res, req.body);
+
+              // Restore the original body and retry the original request
+              req.body = originalBody;
+              console.log(
+                `[SESSION AUTO-REBUILD] Initialization complete for ${sessionId}. Retrying original request.`,
+              );
+              await transport.handleRequest(req, res, req.body);
+            } catch (initError) {
+              console.error('[SESSION AUTO-REBUILD] Failed to initialize session on-the-fly', {
+                sessionId,
+                error: initError,
+              });
+              // Re-throw the original error if initialization fails
+              throw error;
+            }
+          }
+        } else {
+          // If it's a different error, just re-throw it
+          throw error;
+        }
+      }
+    });
+  } catch (error) {
+    console.error(`Error in handleMcpPostRequest: ${error}`);
+    if (!res.headersSent) {
+      res.status(500).json({
+        jsonrpc: '2.0',
+        error: { code: -32000, message: 'Internal Server Error processing MCP request' },
+        id: null,
+      });
     }
-  });
+  } finally {
+    requestContextService.clearRequestContext();
+  }
 };
 
 export const handleMcpOtherRequest = async (req: Request, res: Response) => {

@@ -1367,7 +1367,9 @@ export const getServersInfo = async (
 
 // Get server by name
 export const getServerByName = (name: string): ServerInfo | undefined => {
-  return serverInfos.find((serverInfo) => serverInfo.name === name);
+  if (!name) return undefined;
+  const lowerCaseName = name.toLowerCase();
+  return serverInfos.find((serverInfo) => serverInfo.name.toLowerCase() === lowerCaseName);
 };
 
 // Get server by OAuth state parameter

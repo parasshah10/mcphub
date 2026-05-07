@@ -1,7 +1,23 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Server } from '@/types';
-import { ChevronDown, ChevronRight, AlertCircle, Copy, Check, Wrench, MessageSquare, FileText } from 'lucide-react';
+import { 
+  ChevronDown, 
+  ChevronRight, 
+  AlertCircle, 
+  Copy, 
+  Check, 
+  Wrench, 
+  MessageSquare, 
+  FileText, 
+  Link, 
+  CopyPlus, 
+  RefreshCw, 
+  Edit, 
+  Trash2, 
+  Power,
+  Clipboard
+} from 'lucide-react';
 import { StatusBadge } from '@/components/ui/Badge';
 import ToolCard from '@/components/ui/ToolCard';
 import PromptCard from '@/components/ui/PromptCard';
@@ -14,6 +30,8 @@ interface ServerCardProps {
   server: Server;
   onRemove: (serverName: string) => void;
   onEdit: (server: Server) => void;
+  onClone: (server: Server) => void;
+  onViewEndpoints: (server: Server) => void;
   onToggle?: (server: Server, enabled: boolean) => Promise<boolean>;
   onRefresh?: () => void;
   onReload?: (server: Server) => Promise<boolean>;
@@ -23,6 +41,8 @@ const ServerCard = ({
   server,
   onRemove,
   onEdit,
+  onClone,
+  onViewEndpoints,
   onToggle,
   onRefresh,
   onReload,
@@ -67,6 +87,16 @@ const ServerCard = ({
   const handleEdit = (e: React.MouseEvent) => {
     e.stopPropagation();
     onEdit(server);
+  };
+
+  const handleClone = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onClone(server);
+  };
+
+  const handleViewEndpoints = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onViewEndpoints(server);
   };
 
   const handleToggle = async (e: React.MouseEvent) => {
@@ -467,20 +497,43 @@ const ServerCard = ({
               </div>
             )}
           </div>
-          <div className="flex space-x-2">
-            <button onClick={handleCopyServerConfig} className={`px-3 py-1 btn-secondary`}>
-              {t('server.copy')}
+          <div className="flex flex-wrap gap-1 sm:gap-2 justify-end">
+            <button
+              onClick={handleClone}
+              className="p-1.5 sm:px-3 sm:py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 btn-secondary flex items-center justify-center"
+              title={t('server.clone') || 'Clone'}
+            >
+              <CopyPlus size={14} className="sm:mr-1.5" />
+              <span className="hidden sm:inline">{t('server.clone') || 'Clone'}</span>
+            </button>
+            <button
+              onClick={handleViewEndpoints}
+              className="p-1.5 sm:px-3 sm:py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 btn-secondary flex items-center justify-center"
+              title={t('endpoints.view') || 'View Endpoints'}
+            >
+              <Link size={14} className="sm:mr-1.5" />
+              <span className="hidden sm:inline">{t('endpoints.view') || 'View Endpoints'}</span>
+            </button>
+            <button 
+              onClick={handleCopyServerConfig} 
+              className="p-1.5 sm:px-3 sm:py-1 btn-secondary flex items-center justify-center"
+              title={t('server.copy')}
+            >
+              <Clipboard size={14} className="sm:mr-1.5" />
+              <span className="hidden sm:inline">{t('server.copy')}</span>
             </button>
             <button
               onClick={handleEdit}
-              className="px-3 py-1 bg-blue-100 text-blue-800 rounded hover:bg-blue-200 text-sm btn-primary"
+              className="p-1.5 sm:px-3 sm:py-1 bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 rounded hover:bg-blue-200 dark:hover:bg-blue-800/40 btn-primary flex items-center justify-center"
+              title={t('server.edit')}
             >
-              {t('server.edit')}
+              <Edit size={14} className="sm:mr-1.5" />
+              <span className="hidden sm:inline">{t('server.edit')}</span>
             </button>
             <div className="flex items-center">
               <button
                 onClick={handleToggle}
-                className={`px-3 py-1 text-sm rounded transition-colors ${
+                className={`p-1.5 sm:px-3 sm:py-1 rounded transition-colors flex items-center justify-center ${
                   isToggling
                     ? 'bg-gray-200 text-gray-500'
                     : server.enabled !== false
@@ -488,30 +541,48 @@ const ServerCard = ({
                       : 'bg-blue-100 text-blue-800 hover:bg-blue-200 btn-primary'
                 }`}
                 disabled={isToggling || isReloading}
+                title={server.enabled !== false ? t('server.disable') : t('server.enable')}
               >
-                {isToggling
-                  ? t('common.processing')
-                  : server.enabled !== false
-                    ? t('server.disable')
-                    : t('server.enable')}
+                {isToggling ? (
+                  <RefreshCw size={14} className="animate-spin" />
+                ) : (
+                  <Power size={14} className={server.enabled !== false ? "sm:mr-1.5" : "sm:mr-1.5"} />
+                )}
+                <span className="hidden sm:inline">
+                  {isToggling
+                    ? t('common.processing')
+                    : server.enabled !== false
+                      ? t('server.disable')
+                      : t('server.enable')}
+                </span>
               </button>
             </div>
             {onReload && (
               <button
                 onClick={handleReload}
-                className="px-3 py-1 bg-purple-100 text-purple-800 rounded hover:bg-purple-200 text-sm btn-secondary disabled:opacity-70 disabled:cursor-not-allowed"
+                className="p-1.5 sm:px-3 sm:py-1 bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400 rounded hover:bg-purple-200 dark:hover:bg-purple-800/40 btn-secondary disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center"
                 disabled={isReloading || isToggling || server.enabled === false}
+                title={t('server.reload')}
               >
-                {isReloading ? t('common.processing') : t('server.reload')}
+                {isReloading ? (
+                  <RefreshCw size={14} className="animate-spin" />
+                ) : (
+                  <RefreshCw size={14} className="sm:mr-1.5" />
+                )}
+                <span className="hidden sm:inline">
+                  {isReloading ? t('common.processing') : t('server.reload')}
+                </span>
               </button>
             )}
             <button
               onClick={handleRemove}
-              className="px-3 py-1 bg-red-100 text-red-800 rounded hover:bg-red-200 text-sm btn-danger"
+              className="p-1.5 sm:px-3 sm:py-1 bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 rounded hover:bg-red-200 dark:hover:bg-red-800/40 btn-danger flex items-center justify-center"
+              title={t('server.delete')}
             >
-              {t('server.delete')}
+              <Trash2 size={14} className="sm:mr-1.5" />
+              <span className="hidden sm:inline">{t('server.delete')}</span>
             </button>
-            <button className="text-gray-400 hover:text-gray-600 btn-secondary">
+            <button className="p-1 text-gray-400 hover:text-gray-600 btn-secondary">
               {expandedTab ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
             </button>
           </div>

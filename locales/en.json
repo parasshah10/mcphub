@@ -744,6 +744,14 @@
     "dynamicRegistrationAuthDescription": "Protect the registration endpoint so only authenticated requests can register clients",
     "invalidNumberInput": "Please enter a valid non-negative number"
   },
+  "endpoints": {
+    "title": "API Endpoints",
+    "view": "View Endpoints",
+    "httpDescription": "Use with MCP clients supporting HTTP streaming",
+    "sseDescription": "Use with MCP clients supporting SSE transport",
+    "openapiDescription": "REST API documentation and schema (JSON)",
+    "openapiYamlDescription": "Token-efficient schema for AI clients (YAML)"
+  },
   "mcpb": {
     "upload": "Upload",
     "uploadTitle": "Upload MCPB Bundle",

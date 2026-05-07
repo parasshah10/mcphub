@@ -81,19 +81,13 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
           )}
         </div>
 
-        {/* Theme Switch and Language Switcher and Version */}
+        {/* Theme Switch and Language Switcher */}
         <div className="flex items-center space-x-1 shrink-0">
-          <span className="text-sm text-gray-500 dark:text-gray-400 mr-2">
-            {import.meta.env.PACKAGE_VERSION === 'dev'
-              ? import.meta.env.PACKAGE_VERSION
-              : `v${import.meta.env.PACKAGE_VERSION}`}
-          </span>
-
           <a
             href="https://github.com/samanhappy/mcphub"
             target="_blank"
             rel="noopener noreferrer"
-            className="p-2 rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+            className="p-2 rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-center"
             aria-label="GitHub Repository"
           >
             <GitHubIcon className="h-5 w-5" />

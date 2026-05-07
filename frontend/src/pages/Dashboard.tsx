@@ -2,12 +2,15 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useServerData } from '@/hooks/useServerData';
 import { Server } from '@/types';
+import EndpointsModal from '@/components/EndpointsModal';
+import { Link } from 'lucide-react';
 
 const DashboardPage: React.FC = () => {
   const { t } = useTranslation();
   const { allServers, error, setError, isLoading } = useServerData({ refreshOnMount: true });
 
   const [hasLoaded, setHasLoaded] = React.useState(false);
+  const [showEndpointsModal, setShowEndpointsModal] = React.useState(false);
   const loadingStartedRef = React.useRef(false);
 
   React.useEffect(() => {
@@ -123,7 +126,7 @@ const DashboardPage: React.FC = () => {
       )}
 
       {!showSkeleton && (
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-5">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
           {/* Total servers */}
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 dashboard-card">
             <div className="flex items-center">
@@ -263,7 +266,37 @@ const DashboardPage: React.FC = () => {
               </div>
             </div>
           </div>
+
+          {/* Global Endpoints */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 dashboard-card border-2 border-purple-100 dark:border-purple-900/30">
+            <div className="flex flex-col h-full justify-between">
+              <div className="flex items-center mb-4">
+                <div className="p-3 rounded-full bg-purple-100 text-purple-800 icon-container status-icon-purple">
+                  <Link size={32} />
+                </div>
+                <div className="ml-4">
+                  <h2 className="text-lg font-semibold text-gray-700">
+                    {t('dashboard.globalEndpoints') || 'Global API Endpoints'}
+                  </h2>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowEndpointsModal(true)}
+                className="w-full py-2 bg-purple-600 hover:bg-purple-700 text-white rounded transition-colors text-sm font-medium"
+              >
+                {t('common.view') || 'View Endpoints'}
+              </button>
+            </div>
+          </div>
         </div>
+      )}
+
+      {showEndpointsModal && (
+        <EndpointsModal
+          isOpen={true}
+          onClose={() => setShowEndpointsModal(false)}
+          type="global"
+        />
       )}
 
       {/* Recent activity list */}

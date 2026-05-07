@@ -46,6 +46,7 @@ export const getAllGroups = async (): Promise<IGroup[]> => {
 
 // Get group by ID or name
 export const getGroupByIdOrName = async (key: string): Promise<IGroup | undefined> => {
+  if (!key) return undefined;
   const systemConfigDao = getSystemConfigDao();
 
   const systemConfig = await systemConfigDao.get();
@@ -55,9 +56,12 @@ export const getGroupByIdOrName = async (key: string): Promise<IGroup | undefine
   };
 
   const groups = await getAllGroups();
+  const lowerCaseKey = key.toLowerCase();
   return (
     groups.find(
-      (group) => group.id === key || (group.name === key && routingConfig.enableGroupNameRoute),
+      (group) =>
+        group.id === key ||
+        (routingConfig.enableGroupNameRoute && group.name.toLowerCase() === lowerCaseKey),
     ) || undefined
   );
 };

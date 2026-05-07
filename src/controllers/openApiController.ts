@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import yaml from 'js-yaml';
 import {
   generateOpenAPISpec,
   getAvailableServers,
@@ -43,6 +44,40 @@ export const getOpenAPISpec = async (req: Request, res: Response): Promise<void>
     console.error('Error generating OpenAPI specification:', error);
     res.status(500).json({
       error: 'Failed to generate OpenAPI specification',
+      message: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+};
+
+/**
+ * Generate and return OpenAPI specification in YAML format
+ * GET /api/openapi.yaml
+ */
+export const getOpenAPISpecYaml = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const options: OpenAPIGenerationOptions = {
+      title: req.query.title as string,
+      description: req.query.description as string,
+      version: req.query.version as string,
+      serverUrl: req.query.serverUrl as string,
+      includeDisabledTools: req.query.includeDisabled === 'true',
+      groupFilter: req.query.group as string,
+      serverFilter: req.query.servers ? (req.query.servers as string).split(',') : undefined,
+    };
+
+    const openApiSpec = await generateOpenAPISpec(options);
+    const yamlSpec = yaml.dump(openApiSpec, { indent: 2, noArrayIndent: true, skipInvalid: true });
+
+    res.setHeader('Content-Type', 'application/yaml');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+    res.send(yamlSpec);
+  } catch (error) {
+    console.error('Error generating OpenAPI specification (YAML):', error);
+    res.status(500).json({
+      error: 'Failed to generate OpenAPI specification (YAML)',
       message: error instanceof Error ? error.message : 'Unknown error',
     });
   }
@@ -162,9 +197,13 @@ export const getServerOpenAPISpec = async (req: Request, res: Response): Promise
   try {
     const { name } = req.params;
 
-    // Check if server exists
+    // Find the server case-insensitively
     const availableServers = await getAvailableServers();
-    if (!availableServers.includes(name)) {
+    const actualServerName = availableServers.find(
+      (serverName) => serverName.toLowerCase() === name.toLowerCase(),
+    );
+
+    if (!actualServerName) {
       res.status(404).json({
         error: 'Server not found',
         message: `Server '${name}' is not connected or does not exist`,
@@ -173,13 +212,14 @@ export const getServerOpenAPISpec = async (req: Request, res: Response): Promise
     }
 
     const options: OpenAPIGenerationOptions = {
-      title: (req.query.title as string) || `${name} MCP API`,
+      title: (req.query.title as string) || `${actualServerName} MCP API`,
       description:
-        (req.query.description as string) || `OpenAPI specification for ${name} MCP server tools`,
+        (req.query.description as string) ||
+        `OpenAPI specification for ${actualServerName} MCP server tools`,
       version: req.query.version as string,
       serverUrl: req.query.serverUrl as string,
       includeDisabledTools: req.query.includeDisabled === 'true',
-      serverFilter: [name], // Filter to only this server
+      serverFilter: [actualServerName], // Filter to only this server
     };
 
     const openApiSpec = await generateOpenAPISpec(options);
@@ -194,6 +234,57 @@ export const getServerOpenAPISpec = async (req: Request, res: Response): Promise
     console.error('Error generating server OpenAPI specification:', error);
     res.status(500).json({
       error: 'Failed to generate server OpenAPI specification',
+      message: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+};
+
+/**
+ * Generate and return OpenAPI specification for a specific server in YAML format
+ * GET /api/openapi/:name.yaml
+ */
+export const getServerOpenAPISpecYaml = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { name } = req.params;
+
+    // Find the server case-insensitively
+    const availableServers = await getAvailableServers();
+    const actualServerName = availableServers.find(
+      (serverName) => serverName.toLowerCase() === name.toLowerCase(),
+    );
+
+    if (!actualServerName) {
+      res.status(404).json({
+        error: 'Server not found',
+        message: `Server '${name}' is not connected or does not exist`,
+      });
+      return;
+    }
+
+    const options: OpenAPIGenerationOptions = {
+      title: (req.query.title as string) || `${actualServerName} MCP API`,
+      description:
+        (req.query.description as string) ||
+        `OpenAPI specification for ${actualServerName} MCP server tools`,
+      version: req.query.version as string,
+      serverUrl: req.query.serverUrl as string,
+      includeDisabledTools: req.query.includeDisabled === 'true',
+      serverFilter: [actualServerName], // Filter to only this server
+    };
+
+    const openApiSpec = await generateOpenAPISpec(options);
+    const yamlSpec = yaml.dump(openApiSpec, { indent: 2, noArrayIndent: true, skipInvalid: true });
+
+    res.setHeader('Content-Type', 'application/yaml');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+    res.send(yamlSpec);
+  } catch (error) {
+    console.error('Error generating server OpenAPI specification (YAML):', error);
+    res.status(500).json({
+      error: 'Failed to generate server OpenAPI specification (YAML)',
       message: error instanceof Error ? error.message : 'Unknown error',
     });
   }
@@ -236,6 +327,49 @@ export const getGroupOpenAPISpec = async (req: Request, res: Response): Promise<
     console.error('Error generating group OpenAPI specification:', error);
     res.status(500).json({
       error: 'Failed to generate group OpenAPI specification',
+      message: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+};
+
+/**
+ * Generate and return OpenAPI specification for a specific group in YAML format
+ * GET /api/openapi/group/:groupName.yaml
+ */
+export const getGroupOpenAPISpecYaml = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { name } = req.params;
+
+    // Check if group exists
+    const group = await getGroupByIdOrName(name);
+    if (!group) {
+      getServerOpenAPISpecYaml(req, res);
+      return;
+    }
+
+    const options: OpenAPIGenerationOptions = {
+      title: (req.query.title as string) || `${group.name} Group MCP API`,
+      description:
+        (req.query.description as string) || `OpenAPI specification for ${group.name} group tools`,
+      version: req.query.version as string,
+      serverUrl: req.query.serverUrl as string,
+      includeDisabledTools: req.query.includeDisabled === 'true',
+      groupFilter: name, // Use existing group filter functionality
+    };
+
+    const openApiSpec = await generateOpenAPISpec(options);
+    const yamlSpec = yaml.dump(openApiSpec, { indent: 2, noArrayIndent: true, skipInvalid: true });
+
+    res.setHeader('Content-Type', 'application/yaml');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+    res.send(yamlSpec);
+  } catch (error) {
+    console.error('Error generating group OpenAPI specification (YAML):', error);
+    res.status(500).json({
+      error: 'Failed to generate group OpenAPI specification (YAML)',
       message: error instanceof Error ? error.message : 'Unknown error',
     });
   }
