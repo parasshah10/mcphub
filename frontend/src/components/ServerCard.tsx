@@ -507,40 +507,43 @@ const ServerCard = ({
               </div>
             )}
           </div>
-          <div className="flex flex-wrap gap-1 sm:gap-2 justify-end">
-            <button
-              onClick={handleClone}
-              className="p-1.5 sm:px-3 sm:py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 btn-secondary flex items-center justify-center"
-              title={t('server.clone') || 'Clone'}
-            >
-              <CopyPlus size={14} className="sm:mr-1.5" />
-              <span className="hidden sm:inline">{t('server.clone') || 'Clone'}</span>
-            </button>
-            <button
-              onClick={handleViewEndpoints}
-              className="p-1.5 sm:px-3 sm:py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 btn-secondary flex items-center justify-center"
-              title={t('endpoints.view') || 'View Endpoints'}
-            >
-              <Link size={14} className="sm:mr-1.5" />
-              <span className="hidden sm:inline">{t('endpoints.view') || 'View Endpoints'}</span>
-            </button>
-            <button 
-              onClick={handleCopyServerConfig} 
-              className="p-1.5 sm:px-3 sm:py-1 btn-secondary flex items-center justify-center"
-              title={t('server.copy')}
-            >
-              <Clipboard size={14} className="sm:mr-1.5" />
-              <span className="hidden sm:inline">{t('server.copy')}</span>
-            </button>
-            <button
-              onClick={handleEdit}
-              className="p-1.5 sm:px-3 sm:py-1 bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 rounded hover:bg-blue-200 dark:hover:bg-blue-800/40 btn-primary flex items-center justify-center"
-              title={t('server.edit')}
-            >
-              <Edit size={14} className="sm:mr-1.5" />
-              <span className="hidden sm:inline">{t('server.edit')}</span>
-            </button>
-            <div className="flex items-center">
+          <div className="flex flex-wrap items-center gap-1 sm:gap-2 justify-end w-full sm:w-auto">
+            <div className="flex flex-wrap gap-1 sm:gap-2">
+              <button
+                onClick={handleClone}
+                className="p-1.5 sm:px-3 sm:py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 btn-secondary flex items-center justify-center"
+                title={t('server.clone') || 'Clone'}
+              >
+                <CopyPlus size={14} className="sm:mr-1.5" />
+                <span className="hidden lg:inline text-xs sm:text-sm">{t('server.clone') || 'Clone'}</span>
+              </button>
+              <button
+                onClick={handleViewEndpoints}
+                className="p-1.5 sm:px-3 sm:py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 btn-secondary flex items-center justify-center"
+                title={t('endpoints.view') || 'View Endpoints'}
+              >
+                <Link size={14} className="sm:mr-1.5" />
+                <span className="hidden lg:inline text-xs sm:text-sm">{t('endpoints.view') || 'View Endpoints'}</span>
+              </button>
+              <button 
+                onClick={handleCopyServerConfig} 
+                className="p-1.5 sm:px-3 sm:py-1 btn-secondary flex items-center justify-center"
+                title={t('server.copy')}
+              >
+                <Clipboard size={14} className="sm:mr-1.5" />
+                <span className="hidden lg:inline text-xs sm:text-sm">{t('server.copy')}</span>
+              </button>
+              <button
+                onClick={handleEdit}
+                className="p-1.5 sm:px-3 sm:py-1 bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 rounded hover:bg-blue-200 dark:hover:bg-blue-800/40 btn-primary flex items-center justify-center"
+                title={t('server.edit')}
+              >
+                <Edit size={14} className="sm:mr-1.5" />
+                <span className="hidden lg:inline text-xs sm:text-sm">{t('server.edit')}</span>
+              </button>
+            </div>
+            
+            <div className="flex gap-1 sm:gap-2">
               <button
                 onClick={handleToggle}
                 className={`p-1.5 sm:px-3 sm:py-1 rounded transition-colors flex items-center justify-center ${
@@ -556,9 +559,9 @@ const ServerCard = ({
                 {isToggling ? (
                   <RefreshCw size={14} className="animate-spin" />
                 ) : (
-                  <Power size={14} className={server.enabled !== false ? "sm:mr-1.5" : "sm:mr-1.5"} />
+                  <Power size={14} className={server.enabled !== false || true ? "sm:mr-1.5" : ""} />
                 )}
-                <span className="hidden sm:inline">
+                <span className="hidden sm:inline text-xs sm:text-sm">
                   {isToggling
                     ? t('common.processing')
                     : server.enabled !== false
@@ -566,48 +569,34 @@ const ServerCard = ({
                       : t('server.enable')}
                 </span>
               </button>
-            </div>
-            {onReload && (
+
+              {onReload && (
+                <button
+                  onClick={handleReload}
+                  className="p-1.5 sm:px-3 sm:py-1 bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400 rounded hover:bg-purple-200 dark:hover:bg-purple-800/40 btn-secondary disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center"
+                  disabled={isReloading || isToggling || server.enabled === false}
+                  title={t('server.reload')}
+                >
+                  {isReloading ? (
+                    <RefreshCw size={14} className="animate-spin" />
+                  ) : (
+                    <RefreshCw size={14} className="sm:mr-1.5" />
+                  )}
+                  <span className="hidden sm:inline text-xs sm:text-sm">
+                    {isReloading ? t('common.processing') : t('server.reload')}
+                  </span>
+                </button>
+              )}
+              
               <button
-                onClick={handleReload}
-                className="p-1.5 sm:px-3 sm:py-1 bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400 rounded hover:bg-purple-200 dark:hover:bg-purple-800/40 btn-secondary disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center"
-                disabled={isReloading || isToggling || server.enabled === false}
-                title={t('server.reload')}
+                onClick={handleRemove}
+                className="p-1.5 sm:px-3 sm:py-1 bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 rounded hover:bg-red-200 dark:hover:bg-red-800/40 btn-danger flex items-center justify-center"
+                title={t('server.delete')}
               >
-                {isReloading ? (
-                  <RefreshCw size={14} className="animate-spin" />
-                ) : (
-                  <RefreshCw size={14} className="sm:mr-1.5" />
-                )}
-                <span className="hidden sm:inline">
-                  {isReloading ? t('common.processing') : t('server.reload')}
-                </span>
+                <Trash2 size={14} className="sm:mr-1.5" />
+                <span className="hidden sm:inline text-xs sm:text-sm">{t('server.delete')}</span>
               </button>
-            )}
-            <button
-              onClick={handleRemove}
-              className="p-1.5 sm:px-3 sm:py-1 bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 rounded hover:bg-red-200 dark:hover:bg-red-800/40 btn-danger flex items-center justify-center"
-              title={t('server.delete')}
-            >
-              <Trash2 size={14} className="sm:mr-1.5" />
-              <span className="hidden sm:inline">{t('server.delete')}</span>
-            </button>
-            <button 
-              className="p-1 text-gray-400 hover:text-gray-600 btn-secondary"
-              onClick={(e) => {
-                e.stopPropagation();
-                if (expandedTab) {
-                  setExpandedTab(null);
-                } else {
-                  if (totalTools > 0) setExpandedTab('tools');
-                  else if (totalPrompts > 0) setExpandedTab('prompts');
-                  else if (totalResources > 0) setExpandedTab('resources');
-                  else setExpandedTab('tools');
-                }
-              }}
-            >
-              {expandedTab ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
-            </button>
+            </div>
           </div>
         </div>
 

@@ -12,6 +12,7 @@ import {
   Wrench,
   MessageSquare,
   FileText,
+  ChevronRight,
 } from '@/components/icons/LucideIcons';
 import DeleteDialog from '@/components/ui/DeleteDialog';
 import { useToast } from '@/contexts/ToastContext';

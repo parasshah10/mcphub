@@ -101,39 +101,39 @@ const ServersPage: React.FC = () => {
         </h1>
         
         {/* Action buttons - responsive grid */}
-        <div className="flex flex-wrap gap-2 sm:gap-4">
+        <div className="flex flex-wrap gap-2">
           <button
             onClick={() => navigate('/market')}
-            className="flex-1 sm:flex-none px-3 sm:px-4 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400 rounded hover:bg-blue-200 dark:hover:bg-blue-800/40 flex items-center justify-center text-xs sm:text-sm btn-primary transition-all duration-200 min-w-[100px] sm:min-w-0"
+            className="px-3 sm:px-4 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400 rounded hover:bg-blue-200 dark:hover:bg-blue-800/40 flex items-center justify-center text-sm btn-primary transition-all duration-200"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:mr-2" viewBox="0 0 20 20" fill="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 sm:mr-2" viewBox="0 0 20 20" fill="currentColor">
               <path d="M3 1a1 1 0 000 2h1.22l.305 1.222a.997.997 0 00.01.042l1.358 5.43-.893.892C3.74 11.846 4.632 14 6.414 14H15a1 1 0 000-2H6.414l1-1H14a1 1 0 00.894-.553l3-6A1 1 0 0017 3H6.28l-.31-1.243A1 1 0 005 1H3z" />
             </svg>
-            <span className="hidden sm:inline">{t('nav.market')}</span>
+            <span className="text-xs sm:text-sm">{t('nav.market')}</span>
           </button>
           <AddServerForm onAdd={handleServerAdd} />
           <button
             onClick={() => setShowJsonImport(true)}
-            className="flex-1 sm:flex-none px-3 sm:px-4 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400 rounded hover:bg-blue-200 dark:hover:bg-blue-800/40 flex items-center justify-center text-xs sm:text-sm btn-primary transition-all duration-200 min-w-[100px] sm:min-w-0"
+            className="px-3 sm:px-4 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400 rounded hover:bg-blue-200 dark:hover:bg-blue-800/40 flex items-center justify-center text-sm btn-primary transition-all duration-200"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:mr-2" viewBox="0 0 20 20" fill="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 sm:mr-2" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
             </svg>
-            <span className="hidden sm:inline">{t('jsonImport.button')}</span>
+            <span className="text-xs sm:text-sm">{t('jsonImport.button')}</span>
           </button>
           <button
             onClick={() => setShowMcpbUpload(true)}
-            className="flex-1 sm:flex-none px-3 sm:px-4 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400 rounded hover:bg-blue-200 dark:hover:bg-blue-800/40 flex items-center justify-center text-xs sm:text-sm btn-primary transition-all duration-200 min-w-[100px] sm:min-w-0"
+            className="px-3 sm:px-4 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400 rounded hover:bg-blue-200 dark:hover:bg-blue-800/40 flex items-center justify-center text-sm btn-primary transition-all duration-200"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:mr-2" viewBox="0 0 20 20" fill="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 sm:mr-2" viewBox="0 0 20 20" fill="currentColor">
               <path d="M5.5 13a3.5 3.5 0 01-.369-6.98 4 4 0 117.753-1.977A4.5 4.5 0 1113.5 13H11V9.413l1.293 1.293a1 1 0 001.414-1.414l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.413V13H5.5z" />
             </svg>
-            <span className="hidden sm:inline">{t('mcpb.upload')}</span>
+            <span className="text-xs sm:text-sm">{t('mcpb.upload')}</span>
           </button>
           <button
             onClick={handleRefresh}
             disabled={isRefreshing}
-            className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400 rounded hover:bg-blue-200 dark:hover:bg-blue-800/40 flex items-center justify-center text-xs sm:text-sm btn-primary transition-all duration-200 min-w-[100px] sm:min-w-0 ${isRefreshing ? 'opacity-70 cursor-not-allowed' : ''}`}
+            className={`px-3 sm:px-4 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400 rounded hover:bg-blue-200 dark:hover:bg-blue-800/40 flex items-center justify-center text-sm btn-primary transition-all duration-200 ${isRefreshing ? 'opacity-70 cursor-not-allowed' : ''}`}
           >
             {isRefreshing ? (
               <svg className="animate-spin h-4 w-4 sm:mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
