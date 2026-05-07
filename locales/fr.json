@@ -92,6 +92,8 @@
     "add": "Ajouter",
     "edit": "Modifier",
     "copy": "Copier",
+    "clone": "Cloner",
+    "cloneServer": "Cloner le serveur",
     "delete": "Supprimer",
     "confirmDelete": "Êtes-vous sûr de vouloir supprimer ce serveur ?",
     "deleteWarning": "La suppression du serveur '{{name}}' le supprimera ainsi que toutes ses données. Cette action est irréversible.",
@@ -293,6 +295,10 @@
     "cloud": "Marché Cloud",
     "logs": "Journaux",
     "activity": "Activité"
+  },
+  "dashboard": {
+    "globalEndpoints": "Endpoints",
+    "endpoints": "Endpoints"
   },
   "pages": {
     "dashboard": {

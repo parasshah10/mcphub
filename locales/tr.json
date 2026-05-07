@@ -92,6 +92,8 @@
     "add": "Ekle",
     "edit": "Düzenle",
     "copy": "Kopyala",
+    "clone": "Klonla",
+    "cloneServer": "Sunucuyu Klonla",
     "delete": "Sil",
     "confirmDelete": "Bu sunucuyu silmek istediğinizden emin misiniz?",
     "deleteWarning": "'{{name}}' sunucusunu silmek, onu ve tüm verilerini kaldıracaktır. Bu işlem geri alınamaz.",
@@ -293,6 +295,10 @@
     "cloud": "Bulut Market",
     "logs": "Günlükler",
     "activity": "Etkinlik"
+  },
+  "dashboard": {
+    "globalEndpoints": "Uç Noktalar",
+    "endpoints": "Uç Noktalar"
   },
   "pages": {
     "dashboard": {

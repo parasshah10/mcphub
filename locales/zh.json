@@ -92,6 +92,8 @@
     "add": "添加",
     "edit": "编辑",
     "copy": "复制",
+    "clone": "克隆",
+    "cloneServer": "克隆服务器",
     "delete": "删除",
     "confirmDelete": "您确定要删除此服务器吗？",
     "deleteWarning": "删除服务器 '{{name}}' 将会移除该服务器及其所有数据。此操作无法撤销。",
@@ -294,6 +296,10 @@
     "cloud": "云端市场",
     "logs": "日志",
     "activity": "活动"
+  },
+  "dashboard": {
+    "globalEndpoints": "终端节点",
+    "endpoints": "终端节点"
   },
   "pages": {
     "dashboard": {
