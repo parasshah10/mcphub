@@ -707,19 +707,13 @@ export const handleMcpPostRequest = async (req: Request, res: Response): Promise
       res.status(200).end();
       return;
     } else {
-      // Case 5: No sessionId and not an initialize/notification request, return error
-      console.warn(
-        `[SESSION ERROR] No session ID provided for non-initialize request (method: ${req.body?.method})${username ? ` for user: ${username}` : ''}`,
+      // Case 5: No sessionId and not an initialize/notification request, create a session anyway (Option 2: Auto-Upgrade)
+      console.log(
+        `[SESSION UPGRADE] No session ID provided for POST request (method: ${req.body?.method}), creating new session${username ? ` for user: ${username}` : ''}`,
       );
-      res.status(400).json({
-        jsonrpc: '2.0',
-        error: {
-          code: -32000,
-          message: 'Bad Request: No valid session ID provided',
-        },
-        id: null,
-      });
-      return;
+      transport = await createNewSession(group, username);
+      // Set the session ID header so the client knows their new ID
+      res.setHeader('mcp-session-id', transport.sessionId!);
     }
 
     console.log(`Handling request using transport with type ${transport.constructor.name}`);
@@ -891,9 +885,17 @@ export const handleMcpOtherRequest = async (req: Request, res: Response) => {
 
   console.log(`Handling MCP other request${username ? ` for user: ${username}` : ''}`);
 
-  const sessionId = req.headers['mcp-session-id'] as string | undefined;
+  let sessionId = req.headers['mcp-session-id'] as string | undefined;
+  const group = req.params.group;
+
   if (!sessionId) {
-    res.status(400).send('Invalid or missing session ID');
+    console.log(
+      `[SESSION UPGRADE] No session ID provided for ${req.method} request, creating new session${username ? ` for user: ${username}` : ''}`,
+    );
+    const transport = await createNewSession(group, username);
+    // Set the session ID header so the client knows their new ID
+    res.setHeader('mcp-session-id', transport.sessionId!);
+    await transport.handleRequest(req, res);
     return;
   }
 
