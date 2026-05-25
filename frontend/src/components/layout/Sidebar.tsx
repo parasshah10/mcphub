@@ -167,9 +167,10 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed }) => {
 
   return (
     <aside
-      className={`bg-white dark:bg-gray-800 shadow-sm transition-all duration-300 ease-in-out flex flex-col h-full relative ${
-        collapsed ? 'w-16' : 'w-64'
-      }`}
+      className={`bg-white dark:bg-gray-800 shadow-sm transition-all duration-300 ease-in-out flex flex-col h-full z-30
+        absolute md:relative inset-y-0 left-0 md:inset-auto
+        ${collapsed ? '-translate-x-full md:translate-x-0 md:w-16' : 'translate-x-0 md:translate-x-0 w-64'}
+      `}
     >
       {/* Scrollable navigation area */}
       <div className="overflow-y-auto flex-grow">

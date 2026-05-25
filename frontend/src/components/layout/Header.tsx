@@ -41,7 +41,9 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
           </button>
 
           {/* 应用标题 */}
-          <h1 className="ml-4 text-xl font-bold text-gray-900 dark:text-white">{t('app.title')}</h1>
+          <h1 className="ml-2 sm:ml-4 text-lg sm:text-xl font-bold text-gray-900 dark:text-white truncate max-w-[150px] sm:max-w-none">
+            {t('app.title')}
+          </h1>
         </div>
 
         <div className="flex flex-1 justify-center px-2 min-w-0">
@@ -87,7 +89,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
             href="https://github.com/samanhappy/mcphub"
             target="_blank"
             rel="noopener noreferrer"
-            className="p-2 rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-center"
+            className="hidden sm:flex p-2 rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 items-center justify-center"
             aria-label="GitHub Repository"
           >
             <GitHubIcon className="h-5 w-5" />
@@ -97,7 +99,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
             href="https://docs.mcphub.app"
             target="_blank"
             rel="noopener noreferrer"
-            className="p-2 rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+            className="hidden sm:inline-flex p-2 rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
             aria-label="Documentation"
           >
             <BookOpen className="h-5 w-5" />

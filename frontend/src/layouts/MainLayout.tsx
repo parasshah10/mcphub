@@ -6,8 +6,20 @@ import Content from '@/components/layout/Content';
 import { EmbeddingSyncProvider } from '@/contexts/EmbeddingSyncContext';
 
 const MainLayout: React.FC = () => {
-  // 控制侧边栏展开/折叠状态
-  const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
+  // Collapse sidebar on small screens by default, expand on desktop
+  const [sidebarCollapsed, setSidebarCollapsed] = React.useState(window.innerWidth < 768);
+
+  React.useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 768) {
+        setSidebarCollapsed(true);
+      } else {
+        setSidebarCollapsed(false);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const toggleSidebar = () => {
     setSidebarCollapsed(!sidebarCollapsed);
@@ -19,7 +31,15 @@ const MainLayout: React.FC = () => {
         {/* 顶部导航 */}
         <Header onToggleSidebar={toggleSidebar} />
 
-        <div className="flex flex-1 overflow-hidden">
+        <div className="flex flex-1 overflow-hidden relative">
+          {/* Mobile backdrop overlay */}
+          {!sidebarCollapsed && (
+            <div
+              onClick={() => setSidebarCollapsed(true)}
+              className="fixed inset-0 bg-black/40 z-20 md:hidden cursor-pointer"
+            />
+          )}
+
           {/* 侧边导航 */}
           <Sidebar collapsed={sidebarCollapsed} />
 
