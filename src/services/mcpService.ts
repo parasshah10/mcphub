@@ -472,7 +472,43 @@ const summarizeObjectShapeForLogging = (
   };
 };
 
+const SENSITIVE_KEYS = /token|secret|password|auth|jwt|cookie|key|cert|private/i;
+const MAX_STRING_LENGTH = 100000;
+
+export const fastSanitizePayload = (obj: unknown): any => {
+  if (obj === undefined) {
+    return null;
+  }
+  try {
+    const serialized = JSON.stringify(obj, (key, value) => {
+      if (typeof key === 'string' && SENSITIVE_KEYS.test(key)) {
+        return '[REDACTED]';
+      }
+      if (typeof value === 'string') {
+        if (value.startsWith('data:') && value.includes(';base64,')) {
+          return '[IMAGE/BINARY DATA - EXCLUDED]';
+        }
+        if (value.length > MAX_STRING_LENGTH) {
+          return value.slice(0, MAX_STRING_LENGTH) + '... [TRUNCATED]';
+        }
+      }
+      return value;
+    });
+    return JSON.parse(serialized);
+  } catch (error) {
+    return { _error: 'Failed to serialize raw payload', _type: typeof obj };
+  }
+};
+
 export const summarizeArgumentsForLogging = (value: unknown): Record<string, unknown> => {
+  if (process.env.LOG_RAW_PAYLOADS === 'true') {
+    const sanitized = fastSanitizePayload(value);
+    if (sanitized && typeof sanitized === 'object' && !Array.isArray(sanitized)) {
+      return sanitized as Record<string, unknown>;
+    }
+    return { raw: sanitized };
+  }
+
   if (value === undefined) {
     return { present: false };
   }
@@ -559,6 +595,14 @@ const summarizeContentItemForLogging = (item: unknown): Record<string, unknown> 
 };
 
 export const summarizeToolResultForLogging = (value: unknown): Record<string, unknown> => {
+  if (process.env.LOG_RAW_PAYLOADS === 'true') {
+    const sanitized = fastSanitizePayload(value);
+    if (sanitized && typeof sanitized === 'object' && !Array.isArray(sanitized)) {
+      return sanitized as Record<string, unknown>;
+    }
+    return { raw: sanitized };
+  }
+
   if (!value || typeof value !== 'object') {
     return { type: getValueTypeForLogging(value) };
   }
@@ -583,6 +627,7 @@ export const summarizeToolResultForLogging = (value: unknown): Record<string, un
 
   return summary;
 };
+
 
 const summarizeToolRequestForLogging = (params: any): Record<string, unknown> => ({
   name: typeof params?.name === 'string' ? params.name : 'unknown',

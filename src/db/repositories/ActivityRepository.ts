@@ -141,14 +141,26 @@ export class ActivityRepository {
     };
   }
 
-  /**
-   * Delete activities older than specified date
-   */
   async deleteOlderThan(date: Date): Promise<number> {
     const result = await this.repository
       .createQueryBuilder()
       .delete()
       .where('timestamp < :date', { date })
+      .execute();
+
+    return result.affected || 0;
+  }
+
+  /**
+   * Purge input and output payloads for activities older than specified date
+   */
+  async purgePayloadsOlderThan(date: Date): Promise<number> {
+    const result = await this.repository
+      .createQueryBuilder()
+      .update(Activity)
+      .set({ input: null as any, output: null as any })
+      .where('timestamp < :date', { date })
+      .andWhere('(input IS NOT NULL OR output IS NOT NULL)')
       .execute();
 
     return result.affected || 0;

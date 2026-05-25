@@ -45,6 +45,14 @@ const ActivityPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [detailTab, setDetailTab] = useState<'rendered' | 'json'>('rendered');
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+
+  const handleCopy = (text: string, fieldId: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedField(fieldId);
+    setTimeout(() => setCopiedField(null), 1500);
+  };
 
   // Filter state
   const [appliedFilters, setAppliedFilters] = useState<ActivityFilter>({});
@@ -113,6 +121,7 @@ const ActivityPage: React.FC = () => {
       const response = await getActivityById(activity.id);
       if (response?.success && response.data) {
         setSelectedActivity(response.data);
+        setDetailTab('rendered');
         setShowDetailModal(true);
       }
     } catch (err) {
@@ -594,10 +603,143 @@ const ActivityPage: React.FC = () => {
 
     const inputData = safeParseJSON(selectedActivity.input);
     const outputData = safeParseJSON(selectedActivity.output);
+    const isPurged = selectedActivity.input === null && selectedActivity.output === null;
+
+    const isSummarizedSchema = (data: any) => {
+      return data && typeof data === 'object' && (
+        ('present' in data && 'type' in data) ||
+        ('keyCount' in data && 'valueTypes' in data)
+      );
+    };
+
+    const CopyButton: React.FC<{ text: string; fieldId: string; className?: string }> = ({ text, fieldId, className = '' }) => {
+      const isCopied = copiedField === fieldId;
+      return (
+        <button
+          onClick={() => handleCopy(text, fieldId)}
+          className={`p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white transition-all flex items-center justify-center shrink-0 ${className}`}
+          title={t('activity.copy', 'Copy')}
+        >
+          {isCopied ? (
+            <svg className="h-3.5 w-3.5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+            </svg>
+          ) : (
+            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 002 2h2a2 2 0 002-2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+            </svg>
+          )}
+        </button>
+      );
+    };
+
+    const renderPropertiesTable = (data: any, prefix: string) => {
+      if (!data || typeof data !== 'object') {
+        return <p className="text-gray-600 dark:text-gray-300 font-mono text-sm break-all">{String(data)}</p>;
+      }
+
+      const entries = Object.entries(data);
+      if (entries.length === 0) {
+        return <p className="text-gray-500 dark:text-gray-400 italic text-sm">{t('activity.emptyObject', 'Empty Object')}</p>;
+      }
+
+      return (
+        <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden bg-gray-50 dark:bg-gray-900/50">
+          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
+            <thead className="bg-gray-100 dark:bg-gray-800">
+              <tr>
+                <th className="px-4 py-2 text-left font-medium text-gray-500 dark:text-gray-400 w-1/3">{t('activity.parameter', 'Parameter')}</th>
+                <th className="px-4 py-2 text-left font-medium text-gray-500 dark:text-gray-400">{t('activity.value', 'Value')}</th>
+                <th className="px-4 py-2 text-center w-12"></th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+              {entries.map(([key, val]) => {
+                const valStr = typeof val === 'object' ? JSON.stringify(val, null, 2) : String(val);
+                const isRedacted = valStr === '[REDACTED]';
+                const isExcluded = valStr === '[IMAGE/BINARY DATA - EXCLUDED]';
+                const isTruncated = valStr.includes('... [TRUNCATED]');
+                
+                return (
+                  <tr key={key} className="hover:bg-gray-100/50 dark:hover:bg-gray-800/30 group">
+                    <td className="px-4 py-2 font-mono text-xs font-semibold text-gray-800 dark:text-gray-300 break-all">{key}</td>
+                    <td className="px-4 py-2 font-mono text-xs text-gray-700 dark:text-gray-400 break-all whitespace-pre-wrap">
+                      {isRedacted ? (
+                        <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300 uppercase tracking-wider">
+                          {t('activity.redacted', 'Redacted')}
+                        </span>
+                      ) : isExcluded ? (
+                        <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 uppercase tracking-wider">
+                          {t('activity.excluded', 'Excluded')}
+                        </span>
+                      ) : (
+                        <>
+                          {valStr}
+                          {isTruncated && (
+                            <span className="ml-2 px-2 py-0.5 rounded text-[10px] font-semibold bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-300 uppercase tracking-wider">
+                              {t('activity.truncated', 'Truncated')}
+                            </span>
+                          )}
+                        </>
+                      )}
+                    </td>
+                    <td className="px-4 py-2 text-center">
+                      {!isRedacted && !isExcluded && (
+                        <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                          <CopyButton text={valStr} fieldId={`${prefix}-${key}`} />
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      );
+    };
+
+    const renderOutputContent = (data: any) => {
+      if (!data) return null;
+
+      // Check if this matches standard MCP tool result format with text contents
+      if (data.content && Array.isArray(data.content)) {
+        return (
+          <div className="space-y-3">
+            {data.content.map((item: any, idx: number) => {
+              if (item.type === 'text' && typeof item.text === 'string') {
+                return (
+                  <div key={idx} className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden bg-gray-50 dark:bg-gray-900/50">
+                    <div className="flex justify-between items-center px-4 py-1.5 bg-gray-100 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+                      <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">
+                        Text Content Block {idx + 1}
+                      </span>
+                      <CopyButton text={item.text} fieldId={`output-content-${idx}`} />
+                    </div>
+                    <pre className="p-4 text-xs font-mono overflow-x-auto max-h-96 whitespace-pre-wrap text-gray-800 dark:text-gray-300">
+                      {item.text}
+                    </pre>
+                  </div>
+                );
+              }
+              return (
+                <div key={idx} className="p-3 border border-dashed border-gray-200 dark:border-gray-700 rounded bg-gray-50 dark:bg-gray-900/30 text-xs font-mono text-gray-500">
+                  [{String(item.type || 'unknown').toUpperCase()} DATA]
+                </div>
+              );
+            })}
+          </div>
+        );
+      }
+
+      // Default fallback rendering
+      return renderPropertiesTable(data, 'output');
+    };
 
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden flex flex-col">
+          {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
             <h3 className="text-lg font-medium text-gray-900 dark:text-white">
               {t('activity.details')}
@@ -607,110 +749,196 @@ const ActivityPage: React.FC = () => {
               className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
             >
               <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           </div>
-          <div className="px-6 py-4 overflow-y-auto max-h-[calc(90vh-120px)]">
-            <div className="grid grid-cols-2 gap-4 mb-4">
+
+          <div className="px-6 py-4 overflow-y-auto flex-grow max-h-[calc(90vh-120px)]">
+            {/* Meta statistics */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-5 p-4 bg-gray-50 dark:bg-gray-900/30 rounded-lg border border-gray-200 dark:border-gray-700">
               <div>
-                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400">
+                <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
                   {t('activity.timestamp')}
                 </label>
-                <p className="text-gray-900 dark:text-white">
+                <p className="text-sm font-medium text-gray-900 dark:text-white mt-0.5">
                   {formatTimestamp(selectedActivity.timestamp)}
                 </p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400">
+                <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
                   {t('activity.duration')}
                 </label>
-                <p className="text-gray-900 dark:text-white">
+                <p className="text-sm font-medium text-gray-900 dark:text-white mt-0.5">
                   {formatDuration(selectedActivity.duration)}
                 </p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400">
-                  {t('activity.server')}
+                <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+                  {t('activity.server')} / {t('activity.tool')}
                 </label>
-                <p className="text-gray-900 dark:text-white font-mono">{selectedActivity.server}</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-white font-mono mt-0.5 break-all">
+                  {selectedActivity.server} → {selectedActivity.tool}
+                </p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400">
-                  {t('activity.tool')}
-                </label>
-                <p className="text-gray-900 dark:text-white font-mono">{selectedActivity.tool}</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400">
+                <label className="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
                   {t('activity.status')}
                 </label>
-                <span
-                  className={`px-2 py-1 rounded text-xs font-medium ${
-                    selectedActivity.status === 'success'
-                      ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                      : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                  }`}
-                >
-                  {selectedActivity.status === 'success'
-                    ? t('activity.statusSuccess')
-                    : t('activity.statusError')}
-                </span>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400">
-                  {t('activity.group')}
-                </label>
-                <p className="text-gray-900 dark:text-white">{selectedActivity.group || '-'}</p>
-              </div>
-              {selectedActivity.keyName && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-500 dark:text-gray-400">
-                    {t('activity.key')}
-                  </label>
-                  <p className="text-gray-900 dark:text-white">{selectedActivity.keyName}</p>
+                <div className="mt-1">
+                  <span
+                    className={`px-2 py-0.5 rounded text-xs font-semibold ${
+                      selectedActivity.status === 'success'
+                        ? 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300'
+                        : 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300'
+                    }`}
+                  >
+                    {selectedActivity.status === 'success'
+                      ? t('activity.statusSuccess')
+                      : t('activity.statusError')}
+                  </span>
                 </div>
-              )}
+              </div>
             </div>
 
             {selectedActivity.errorMessage && (
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-red-500 mb-1">
+              <div className="mb-5">
+                <label className="block text-sm font-semibold text-red-600 dark:text-red-400 mb-1.5">
                   {t('activity.errorMessage')}
                 </label>
-                <div className="bg-red-50 dark:bg-red-900/20 rounded p-3 text-sm text-red-800 dark:text-red-200">
+                <div className="bg-red-50 dark:bg-red-950/20 border-l-4 border-red-500 rounded p-3.5 text-xs font-mono text-red-800 dark:text-red-300 whitespace-pre-wrap">
                   {selectedActivity.errorMessage}
                 </div>
               </div>
             )}
 
-            {inputData && (
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
-                  {t('activity.input')}
-                </label>
-                <pre className="bg-gray-100 dark:bg-gray-700 rounded p-3 text-sm overflow-x-auto max-h-64">
-                  {typeof inputData === 'string' ? inputData : JSON.stringify(inputData, null, 2)}
-                </pre>
+            {isPurged && (
+              <div className="bg-yellow-50 dark:bg-yellow-950/20 border-l-4 border-yellow-500 p-4 rounded mb-5">
+                <div className="flex">
+                  <div className="flex-shrink-0 mt-0.5">
+                    <svg className="h-5 w-5 text-yellow-600" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <h3 className="text-sm font-semibold text-yellow-800 dark:text-yellow-200">
+                      {t('activity.purgedTitle', 'Payload Purged')}
+                    </h3>
+                    <p className="text-xs text-yellow-700 dark:text-yellow-300 mt-1">
+                      {t('activity.purgedMessage', 'The raw input and output payloads for this tool call have been automatically purged under the 30-day retention policy to reclaim storage space.')}
+                    </p>
+                  </div>
+                </div>
               </div>
             )}
 
-            {outputData && (
-              <div>
-                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
-                  {t('activity.output')}
-                </label>
-                <pre className="bg-gray-100 dark:bg-gray-700 rounded p-3 text-sm overflow-x-auto max-h-64">
-                  {typeof outputData === 'string'
-                    ? outputData
-                    : JSON.stringify(outputData, null, 2)}
-                </pre>
-              </div>
+            {!isPurged && (
+              <>
+                {/* Tabs Selector */}
+                <div className="flex border-b border-gray-200 dark:border-gray-700 mb-5">
+                  <button
+                    className={`py-2.5 px-5 font-semibold text-sm border-b-2 transition-all flex items-center gap-1.5 ${
+                      detailTab === 'rendered'
+                        ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                    }`}
+                    onClick={() => setDetailTab('rendered')}
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
+                    </svg>
+                    {t('activity.renderedView', 'Rendered View')}
+                  </button>
+                  <button
+                    className={`py-2.5 px-5 font-semibold text-sm border-b-2 transition-all flex items-center gap-1.5 ${
+                      detailTab === 'json'
+                        ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                    }`}
+                    onClick={() => setDetailTab('json')}
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                    </svg>
+                    {t('activity.rawJson', 'Raw JSON')}
+                  </button>
+                </div>
+
+                {detailTab === 'rendered' ? (
+                  <div className="space-y-6">
+                    {/* Rendered View: Input */}
+                    {inputData && (
+                      <div>
+                        <div className="flex justify-between items-center mb-2">
+                          <label className="text-sm font-semibold text-gray-500 dark:text-gray-400 flex items-center gap-2">
+                            {t('activity.input')}
+                            {isSummarizedSchema(inputData) && (
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 tracking-wider">
+                                {t('activity.summarizedShape', 'Summarized Shape')}
+                              </span>
+                            )}
+                          </label>
+                          {!isSummarizedSchema(inputData) && (
+                            <CopyButton text={JSON.stringify(inputData, null, 2)} fieldId="input-all-rendered" />
+                          )}
+                        </div>
+                        {renderPropertiesTable(inputData, 'input')}
+                      </div>
+                    )}
+
+                    {/* Rendered View: Output */}
+                    {outputData && (
+                      <div>
+                        <div className="flex justify-between items-center mb-2">
+                          <label className="text-sm font-semibold text-gray-500 dark:text-gray-400 flex items-center gap-2">
+                            {t('activity.output')}
+                            {isSummarizedSchema(outputData) && (
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 tracking-wider">
+                                {t('activity.summarizedShape', 'Summarized Shape')}
+                              </span>
+                            )}
+                          </label>
+                          {!isSummarizedSchema(outputData) && (
+                            <CopyButton text={JSON.stringify(outputData, null, 2)} fieldId="output-all-rendered" />
+                          )}
+                        </div>
+                        {renderOutputContent(outputData)}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-5">
+                    {/* Raw JSON View */}
+                    {inputData && (
+                      <div>
+                        <div className="flex justify-between items-center mb-2">
+                          <label className="text-sm font-semibold text-gray-500 dark:text-gray-400">
+                            {t('activity.input')} (JSON)
+                          </label>
+                          <CopyButton text={JSON.stringify(inputData, null, 2)} fieldId="input-raw-json" />
+                        </div>
+                        <pre className="bg-gray-900 text-gray-100 rounded-lg p-4 text-xs font-mono overflow-x-auto max-h-72 border border-gray-800">
+                          {JSON.stringify(inputData, null, 2)}
+                        </pre>
+                      </div>
+                    )}
+
+                    {outputData && (
+                      <div>
+                        <div className="flex justify-between items-center mb-2">
+                          <label className="text-sm font-semibold text-gray-500 dark:text-gray-400">
+                            {t('activity.output')} (JSON)
+                          </label>
+                          <CopyButton text={JSON.stringify(outputData, null, 2)} fieldId="output-raw-json" />
+                        </div>
+                        <pre className="bg-gray-900 text-gray-100 rounded-lg p-4 text-xs font-mono overflow-x-auto max-h-96 border border-gray-800">
+                          {JSON.stringify(outputData, null, 2)}
+                        </pre>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>

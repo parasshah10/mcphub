@@ -326,5 +326,54 @@ describe('MCP Service - Smart Routing with Group Support', () => {
         }),
       );
     });
+
+    it('keeps raw content but redacts secrets when LOG_RAW_PAYLOADS is true', () => {
+      const originalEnv = process.env.LOG_RAW_PAYLOADS;
+      process.env.LOG_RAW_PAYLOADS = 'true';
+      try {
+        const inputArgs = {
+          query: 'React Native',
+          api_key: 'sk-1234567890',
+          nested: { password: 'my-super-secret' }
+        };
+        const summary = mcpService.summarizeArgumentsForLogging(inputArgs);
+        
+        expect(summary.query).toBe('React Native');
+        expect(summary.api_key).toBe('[REDACTED]');
+        expect((summary.nested as any).password).toBe('[REDACTED]');
+        
+        const toolResult = {
+          isError: false,
+          secret_token: 'abc123secret',
+          content: [
+            { type: 'text', text: 'Benign output data' }
+          ]
+        };
+        const resultSummary = mcpService.summarizeToolResultForLogging(toolResult);
+        expect(resultSummary.secret_token).toBe('[REDACTED]');
+        expect(resultSummary.isError).toBe(false);
+        expect((resultSummary.content as any)[0].text).toBe('Benign output data');
+      } finally {
+        process.env.LOG_RAW_PAYLOADS = originalEnv;
+      }
+    });
+
+    it('excludes base64 image data and truncates excessively long strings', () => {
+      const originalEnv = process.env.LOG_RAW_PAYLOADS;
+      process.env.LOG_RAW_PAYLOADS = 'true';
+      try {
+        const inputArgs = {
+          image: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...',
+          longText: 'a'.repeat(100005)
+        };
+        const summary = mcpService.summarizeArgumentsForLogging(inputArgs);
+        
+        expect(summary.image).toBe('[IMAGE/BINARY DATA - EXCLUDED]');
+        expect((summary.longText as string).endsWith('... [TRUNCATED]')).toBe(true);
+        expect((summary.longText as string).length).toBe(100000 + '... [TRUNCATED]'.length);
+      } finally {
+        process.env.LOG_RAW_PAYLOADS = originalEnv;
+      }
+    });
   });
 });

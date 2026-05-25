@@ -3,6 +3,7 @@ import AppServer from './server.js';
 import { initializeDatabaseMode } from './utils/migration.js';
 import { createFetchWithProxy, getProxyConfigFromEnv } from './services/proxy.js';
 import { isRetryableDbError } from './utils/dbRetry.js';
+import { getActivityDao } from './dao/DaoFactory.js';
 
 const appServer = new AppServer();
 
@@ -154,6 +155,30 @@ const setupGlobalProxyFetch = (): void => {
   });
 };
 
+function startActivityLogCleanup() {
+  const runCleanup = async () => {
+    try {
+      const activityDao = getActivityDao();
+      if (activityDao) {
+        const retentionDays = parseInt(process.env.LOG_RETENTION_DAYS || '30', 10);
+        const cutoffDate = new Date();
+        cutoffDate.setDate(cutoffDate.getDate() - retentionDays);
+        console.log(`[cleanup] Running background activity log payload purge for records older than ${retentionDays} days...`);
+        const purgedCount = await activityDao.purgePayloadsOlderThan(cutoffDate);
+        console.log(`[cleanup] Successfully purged payloads for ${purgedCount} old activity logs.`);
+      }
+    } catch (error) {
+      console.error('[cleanup] Failed to run background activity log payload purge:', error);
+    }
+  };
+
+  // Run initial cleanup on boot
+  runCleanup();
+
+  // Run cleanup every 24 hours
+  setInterval(runCleanup, 24 * 60 * 60 * 1000);
+}
+
 async function boot() {
   try {
     setupGlobalProxyFetch();
@@ -169,6 +194,9 @@ async function boot() {
         console.error('Failed to initialize database mode');
         process.exit(1);
       }
+      
+      // Start background activity log cleanup
+      startActivityLogCleanup();
     }
 
     await appServer.initialize();

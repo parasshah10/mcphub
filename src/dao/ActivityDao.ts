@@ -15,6 +15,7 @@ export interface ActivityDao {
   ): Promise<PaginatedResult<IActivity>>;
   getStats(filter?: IActivityFilter): Promise<IActivityStats>;
   deleteOlderThan(date: Date): Promise<number>;
+  purgePayloadsOlderThan(date: Date): Promise<number>;
   getDistinctServers(): Promise<string[]>;
   getDistinctTools(): Promise<string[]>;
   getDistinctGroups(): Promise<string[]>;
@@ -78,6 +79,10 @@ export class ActivityDaoDbImpl implements ActivityDao {
 
   async deleteOlderThan(date: Date): Promise<number> {
     return await this.repository.deleteOlderThan(date);
+  }
+
+  async purgePayloadsOlderThan(date: Date): Promise<number> {
+    return await this.repository.purgePayloadsOlderThan(date);
   }
 
   async getDistinctServers(): Promise<string[]> {
